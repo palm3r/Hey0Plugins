@@ -20,7 +20,7 @@ public class ListNsCommand extends Command {
 		StringBuilder sb = new StringBuilder();
 		for (String s : set) {
 			if (sb.length() > 0)
-				sb.append(",");
+				sb.append(" ");
 			sb.append(s);
 		}
 		Chat.toPlayer(player, Colors.LightGreen + "Namespaces: " + Colors.White

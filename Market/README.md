@@ -42,21 +42,21 @@ This is a plugin for Hey0 minecraft server mod that provides simple market and p
 
 * /market [item]
     * Display information of item
-    * Example: sand p10 s100 b-10 f1.5 e1 a25
-    		* p : base price
-    		* s : stocks
-    		* b : balance
-    		* f : factor
-    		* e : enabled
-    		* a : actual price
+    * Example: sand P 10 S 100 B -10 F 1.5 E 1 A 25
+    		* P : base price (editable)
+    		* S : stocks (editable)
+    		* B : balance (editable)
+    		* F : factor (editable)
+    		* E : enabled (editable)
+    		* A : actual price (readonly)
 * /market [item] [key:value]...
     * Update item setting
     * Only admin and player who can use "/market-admin" command
-    * Keys: n,p,s,b,f,e
+    * Keys: p,s,b,f,e
     * Exapmes:
-        * /market sand p:100
-        * /market 45 n:brickblock s:100 e:1
-        * /market tnt s:0 e:0
+        * /market sand p 100 (change base price of sand to 100)
+        * /market 45 s 100 e 1 (change stocks of brickblock to 100, and enable)
+        * /market tnt s 0 e 0 (change stocks of TNT to 0, and disable)
 
 ## Configuration
 

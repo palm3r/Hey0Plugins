@@ -12,39 +12,24 @@ public class WebApi extends PluginEx {
 	public static final String BLOCKS_PER_MINUTES_KEY = "blocks-per-minutes";
 	public static final String CONSLE_COMMAND_KEY = "console-command";
 
-	@SuppressWarnings("serial")
-	private Map<String, Pair<WebApiHandler, String>> handlers = new HashMap<String, Pair<WebApiHandler, String>>() {
-		{
-			put(PLAYERS_COUNT_KEY, new Pair<WebApiHandler, String>(
-					new PlayerCountHandler(), "/count/players"));
-			put(MOBS_COUNT_KEY, new Pair<WebApiHandler, String>(
-					new MobCountHandler(), "/count/mobs"));
-			put(BLOCKS_PER_MINUTES_KEY, new Pair<WebApiHandler, String>(bpmHandler,
-					"/count/blocks"));
-			put(CONSLE_COMMAND_KEY, new Pair<WebApiHandler, String>(
-					new CommandHandler(), "/command"));
-		}
-	};
-
-	private BlockPerMinutesHandler bpmHandler = new BlockPerMinutesHandler();
+	private Map<String, Pair<WebApiHandler, String>> handlers;
 	private HttpServer httpd;
 
-	private final PluginListener listener = new PluginListener() {
-		public boolean onBlockBreak(Player player, Block block) {
-			bpmHandler.destroyed(block.getType());
-			return false;
-		}
-
-		public boolean onBlockCreate(Player player, Block placed, Block clicked,
-				int item) {
-			bpmHandler.created(placed.getType());
-			return false;
-		}
-	};
-
+	@SuppressWarnings("serial")
 	public WebApi() throws IOException {
-		initPluginEx("WebApi", listener, PluginListener.Priority.LOW,
+		initPluginEx("WebApi", null, PluginListener.Priority.LOW,
 				PluginLoader.Hook.BLOCK_BROKEN, PluginLoader.Hook.BLOCK_CREATED);
+
+		this.handlers = new HashMap<String, Pair<WebApiHandler, String>>() {
+			{
+				put(PLAYERS_COUNT_KEY, new Pair<WebApiHandler, String>(
+						new PlayerCountHandler(), "/count/players"));
+				put(MOBS_COUNT_KEY, new Pair<WebApiHandler, String>(
+						new MobCountHandler(), "/count/mobs"));
+				put(CONSLE_COMMAND_KEY, new Pair<WebApiHandler, String>(
+						new CommandHandler(), "/command"));
+			}
+		};
 	}
 
 	protected void onEnable() {
@@ -53,7 +38,7 @@ public class WebApi extends PluginEx {
 			for (final Map.Entry<String, Pair<WebApiHandler, String>> entry : handlers
 					.entrySet()) {
 				String path = getProperty(entry.getKey(), entry.getValue().second);
-				if (path == null || path.isEmpty())
+				if (path == null || path.isEmpty() || entry.getValue().first == null)
 					continue;
 				httpd.createContext(path).setHandler(new HttpHandler() {
 					public void handle(HttpExchange exchange) {
@@ -70,8 +55,9 @@ public class WebApi extends PluginEx {
 										}
 									});
 							PrintWriter pw = new PrintWriter(exchange.getResponseBody());
-							int status = entry.getValue().first.call(pw,
-									(String[]) args.toArray(new String[0]));
+							String[] a = args.size() > 0 ? (String[]) args
+									.toArray(new String[0]) : new String[] {};
+							int status = entry.getValue().first.call(pw, a);
 							exchange.sendResponseHeaders(status, 0);
 							pw.flush();
 							pw.close();

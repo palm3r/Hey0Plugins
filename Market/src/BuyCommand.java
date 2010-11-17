@@ -22,7 +22,8 @@ public class BuyCommand extends Command {
 			Chat.toPlayer(player, getUsage(false));
 			return true;
 		}
-		if (item.getStock() == 0) {
+		int payment = item.getActualPrice(true, amount);
+		if (item.getStock() == 0 || payment <= 0) {
 			Chat.toPlayer(player, Colors.Gold + "%s is sold out", item.getName());
 			return true;
 		}
@@ -32,7 +33,6 @@ public class BuyCommand extends Command {
 			return true;
 		}
 		int money = market.getMoney(player.getName());
-		int payment = item.getActualPrice(true, amount);
 		if (payment > money) {
 			Chat.toPlayer(player, Colors.Gold + "You need %s to buy (you have %s)",
 					market.currencyFormat(payment), market.currencyFormat(money));
@@ -44,28 +44,14 @@ public class BuyCommand extends Command {
 			return true;
 		}
 		Inventory inv = player.getInventory();
-		for (int count = amount; count > 0;) {
-			Item it = inv.getItemFromId(item.getId());
-			if (it == null) {
-				int slot = inv.getEmptySlot();
-				if (slot == -1) {
-					Chat.toPlayer(player, Colors.Rose
-							+ "No enough space in your inventory");
-					return true;
-				}
-				it = inv.getItemFromSlot(slot);
-			}
-			int newAmount = it.getAmount() + count;
-			count = newAmount > 64 ? newAmount - 64 : 0;
-			it.setAmount(newAmount);
-		}
+		inv.giveItem(item.getId(), amount);
 		inv.updateInventory();
 		market.setMoney(player.getName(), money - payment);
 		market.saveGoods();
 		market.saveBank();
 		Chat.toPlayer(player, Colors.LightGreen + "You bought %d %s (paid %s)",
 				amount, item.getName(), market.currencyFormat(payment));
-		Log.info("Market: %s BOUGHT %d %s paid %d total %d", player.getName(),
+		Log.info("Market: %s BOUGHT %d %s paid %s total %s", player.getName(),
 				amount, item.getName(), market.currencyFormat(payment),
 				market.currencyFormat(money - payment));
 		return true;

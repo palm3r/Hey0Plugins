@@ -26,7 +26,7 @@ public class ListWarpsCommand extends Command {
 		StringBuilder sb = new StringBuilder();
 		for (String s : set) {
 			if (sb.length() > 0)
-				sb.append(",");
+				sb.append(" ");
 			sb.append(s);
 		}
 		String ns2 = ns + "\'s";

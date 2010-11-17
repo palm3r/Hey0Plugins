@@ -4,7 +4,7 @@ public class MarketCommand extends Command {
 
 	public MarketCommand(Market market) {
 		super(new String[] { "/market" },
-				"[item] <key:value>", "Manage market");
+				"[item] <key value>", "Manage market");
 		this.market = market;
 	}
 
@@ -22,13 +22,10 @@ public class MarketCommand extends Command {
 		}
 
 		if (player.canUseCommand("/market-admin")) {
-			for (int i = 2; i < args.length; ++i) {
+			for (int i = 2; i + 1 < args.length; i += 2) {
 				try {
-					String[] s = args[i].split(":", 2);
-					String key = s[0], value = s[1];
-					if (key.equalsIgnoreCase("n")) {
-						g.setName(value);
-					} else if (key.equalsIgnoreCase("p")) {
+					String key = args[i], value = args[i + 1];
+					if (key.equalsIgnoreCase("p")) {
 						g.setPrice(Integer.valueOf(value));
 					} else if (args[i].equalsIgnoreCase("s")) {
 						g.setStock(Integer.valueOf(value));
@@ -37,17 +34,14 @@ public class MarketCommand extends Command {
 					} else if (args[i].equalsIgnoreCase("f")) {
 						g.setFactor(Double.valueOf(value));
 					} else if (args[i].equalsIgnoreCase("e")) {
-						if (value.equals("1"))
-							g.enable(true);
-						else if (value.equals("0"))
-							g.enable(false);
+						g.enable(Integer.valueOf(value) != 0);
 					}
 				} catch (Exception e) {
 				}
 			}
 			market.saveGoods();
 		}
-		Chat.toPlayer(player, Colors.Gold + "%s p:%d s:%d b:%d f:%f e:%d a:%d",
+		Chat.toPlayer(player, Colors.Gold + "%s P %d S %d B %d F %f E %d A %d",
 				g.getName(), g.getPrice(), g.getStock(), g.getBalance(), g.getFactor(),
 				g.isEnabled() ? 1 : 0, g.getActualPrice(true, 1));
 		return true;
