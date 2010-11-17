@@ -10,38 +10,36 @@ public class ListWarpsCommand extends Command {
 	}
 
 	public boolean call(Player player, String[] args) {
-		Pair<String, String> p = plugin.normalizeKey(player, "foo");
+		String defns = plugin.normalizeKey(player, "foo").first;
+		String ns = args.length > 1 ? args[1] : defns;
 		Set<String> warps = plugin.getAllWarps();
 		Set<String> set = new HashSet<String>();
 		for (String w : warps) {
 			String[] s = w.split(":", 2);
-			if (!s[0].equalsIgnoreCase(p.first))
+			if (s[0].equalsIgnoreCase(ns))
 				set.add(s[1]);
 		}
 		if (set.isEmpty()) {
 			Chat.toPlayer(player, Colors.Rose + "No warps avairable");
 			return true;
 		}
-		String ns2 = p.first;
-		if (p.first.equals("!"))
-			ns2 = "Secret";
-		if (p.first.equals("*"))
-			ns2 = "Global";
 		StringBuilder sb = new StringBuilder();
 		for (String s : set) {
 			if (sb.length() > 0)
 				sb.append(",");
 			sb.append(s);
 		}
-		Chat.toPlayer(player, Colors.LightGreen + ns2 + " warps: " + Colors.White
+		String ns2 = ns + "\'s";
+		if (ns.equals("*"))
+			ns2 = "Global";
+		if (ns.equals("!"))
+			ns2 = "Secret";
+		Chat.toPlayer(player, Colors.LightGreen + ns2 + " warp: " + Colors.White
 				+ sb.toString().trim());
-		Chat.toPlayer(
-				player,
-				Colors.White
-						+ "type "
-						+ Colors.LightBlue
-						+ (p.first.equals(player.getName()) ? "/warp [name]" : "/warp "
-								+ p.first + ":[name]") + Colors.White + " to use");
+		Chat.toPlayer(player,
+				Colors.White + "type " + Colors.LightBlue
+						+ (ns.equals(defns) ? "/warp [name]" : "/warp " + ns + ":[name]")
+						+ Colors.White + " to go");
 		return true;
 	}
 

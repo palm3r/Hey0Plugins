@@ -4,7 +4,7 @@ public class MarketCommand extends Command {
 
 	public MarketCommand(Market market) {
 		super(new String[] { "/market" },
-				"[item] <price|stock|balance|factor|enable> <value>", "Manage market");
+				"[item] <key:value>", "Manage market");
 		this.market = market;
 	}
 
@@ -47,7 +47,7 @@ public class MarketCommand extends Command {
 			}
 			market.saveGoods();
 		}
-		Chat.toPlayer(player, Colors.Gold + "%s p%d s%d b%d f%f e%d a%d",
+		Chat.toPlayer(player, Colors.Gold + "%s p:%d s:%d b:%d f:%f e:%d a:%d",
 				g.getName(), g.getPrice(), g.getStock(), g.getBalance(), g.getFactor(),
 				g.isEnabled() ? 1 : 0, g.getActualPrice(true, 1));
 		return true;

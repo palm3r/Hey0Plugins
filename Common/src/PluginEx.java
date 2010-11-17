@@ -4,7 +4,6 @@ import java.util.*;
 
 public abstract class PluginEx extends Plugin {
 
-	private static final String PLUGINS_DIR = "plugins";
 	private static final String PROP_FILE = "plugin.ini";
 
 	private PluginListener listener;
@@ -60,14 +59,12 @@ public abstract class PluginEx extends Plugin {
 
 	public final <K, V> Map<K, V> load(String fileName,
 			Converter<String, Pair<K, V>> converter) throws IOException {
-		return Tools.load(PLUGINS_DIR + File.separator + pluginName
-				+ File.separator + fileName, converter);
+		return Tools.load(pluginName + File.separator + fileName, converter);
 	}
 
 	public final <K, V> void save(Map<K, V> data, String fileName,
 			Converter<Pair<K, V>, String> converter) throws IOException {
-		Tools.save(data, PLUGINS_DIR + File.separator + pluginName + File.separator
-				+ fileName, converter);
+		Tools.save(data, pluginName + File.separator + fileName, converter);
 	}
 
 	protected void onInitialize() {
