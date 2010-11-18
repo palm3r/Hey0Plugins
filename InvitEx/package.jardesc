@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="MS932" standalone="no"?>
 <jardesc>
-    <jar path="InvitEx.jar"/>
+    <jar path="plugins/InvitEx.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/InvitEx/package.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
