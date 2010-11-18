@@ -2,15 +2,22 @@ import java.util.*;
 
 public abstract class Command {
 
+	private boolean auth;
 	private List<String> aliases;
 	private String params, description;
 
-	public Command(String[] aliases, String params, String description) {
+	public Command(boolean auth, String[] aliases, String params,
+			String description) {
+		this.auth = auth;
 		this.aliases = Arrays.asList(aliases);
 		this.params = params;
 		this.description = description;
 	}
 
+	public boolean auth(Player player) {
+		return auth ? player.canUseCommand(aliases.get(0)) : true;
+	}
+	
 	public String getUsage(boolean withDescription) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(Colors.Rose + "Usage: " + Colors.White);

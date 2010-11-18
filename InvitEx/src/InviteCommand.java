@@ -5,7 +5,7 @@ public class InviteCommand extends Command {
 	private InvitEx plugin;
 
 	public InviteCommand(InvitEx plugin) {
-		super(new String[] { "/invite" }, "[player]", "Invite player");
+		super(false, new String[] { "/invite" }, "[player]", "Invite player");
 		this.plugin = plugin;
 	}
 

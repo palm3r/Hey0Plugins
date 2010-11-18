@@ -3,7 +3,7 @@ public class VoteCommand extends Command {
 	private VotEx plugin;
 
 	public VoteCommand(VotEx plugin) {
-		super(new String[] { "/vote" }, "[subject]", "Begin vote");
+		super(true, new String[] { "/vote" }, "[subject]", "Begin vote");
 		this.plugin = plugin;
 	}
 

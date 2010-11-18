@@ -5,7 +5,7 @@ public class ListWarpsCommand extends Command {
 	private WarpEx plugin;
 
 	public ListWarpsCommand(WarpEx plugin) {
-		super(new String[] { "/listwarps", "/lw" }, "<namespace>", "Show warps");
+		super(false, new String[] { "/listwarps", "/lw" }, "<namespace>", "Show warps");
 		this.plugin = plugin;
 	}
 

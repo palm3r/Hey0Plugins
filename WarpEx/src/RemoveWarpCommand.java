@@ -3,7 +3,7 @@ public class RemoveWarpCommand extends Command {
 	private WarpEx plugin;
 
 	public RemoveWarpCommand(WarpEx plugin) {
-		super(new String[] { "/removewarp", "/rw" }, "<namespace:>[warp]",
+		super(false, new String[] { "/removewarp", "/rw" }, "<namespace:>[warp]",
 				"Remove warp");
 		this.plugin = plugin;
 	}
@@ -17,7 +17,7 @@ public class RemoveWarpCommand extends Command {
 		String key = p.first + ":" + p.second;
 		Location location = plugin.getWarp(player, key);
 		if (location == null) {
-			Chat.toPlayer(player, Colors.Rose + "Warp %s not found.", key);
+			Chat.toPlayer(player, Colors.Rose + "Warp %s not found", key);
 			return true;
 		}
 		plugin.removeWarp(player, key);

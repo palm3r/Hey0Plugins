@@ -54,7 +54,6 @@ public abstract class PluginEx extends Plugin {
 
 	public final void setProperty(String key, String value) {
 		props.put(key, value);
-		saveProperties();
 	}
 
 	public final <K, V> Map<K, V> load(String fileName,
@@ -87,8 +86,20 @@ public abstract class PluginEx extends Plugin {
 		for (Command c : commands) {
 			c.enable();
 		}
-		loadProperties();
+		boolean loadSuccessful = false;
+		try {
+			loadProperties();
+			loadSuccessful = true;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		onEnable();
+		if (!loadSuccessful) {
+			try {
+				saveProperties();
+			} catch (Exception e) {
+			}
+		}
 		Log.info("%s enabled", pluginName);
 	}
 
@@ -97,33 +108,24 @@ public abstract class PluginEx extends Plugin {
 			c.disable();
 		}
 		onDisable();
-		saveProperties();
 		Log.info("%s disabled", pluginName);
 	}
 
-	public final void loadProperties() {
-		try {
-			props = load(PROP_FILE, new Converter<String, Pair<String, String>>() {
-				public Pair<String, String> convert(String value) {
-					String[] split = value.split("=", 2);
-					return new Pair<String, String>(split[0].trim(), split[1].trim());
-				}
-			});
-		} catch (Exception e) {
-			saveProperties();
-		}
+	public final void loadProperties() throws IOException {
+		props = load(PROP_FILE, new Converter<String, Pair<String, String>>() {
+			public Pair<String, String> convert(String value) {
+				String[] split = value.split("=", 2);
+				return new Pair<String, String>(split[0].trim(), split[1].trim());
+			}
+		});
 	}
 
-	public final void saveProperties() {
-		try {
-			save(props, PROP_FILE, new Converter<Pair<String, String>, String>() {
-				public String convert(Pair<String, String> value) {
-					return value.first + " = " + value.second;
-				}
-			});
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	public final void saveProperties() throws IOException {
+		save(props, PROP_FILE, new Converter<Pair<String, String>, String>() {
+			public String convert(Pair<String, String> value) {
+				return value.first + " = " + value.second;
+			}
+		});
 	}
 
 	private final class Listener extends PluginListener {
@@ -168,7 +170,8 @@ public abstract class PluginEx extends Plugin {
 		public boolean onCommand(Player player, String[] args) {
 			for (Command c : commands) {
 				if (c.match(args[0])) {
-					return c.call(player, args);
+					if (c.auth(player))
+						return c.call(player, args);
 				}
 			}
 			return this.listener != null ? this.listener.onCommand(player, args)

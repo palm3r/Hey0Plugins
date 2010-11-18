@@ -5,7 +5,7 @@ public class ListNsCommand extends Command {
 	private WarpEx plugin;
 
 	public ListNsCommand(WarpEx plugin) {
-		super(new String[] { "/listns" }, null, "Show namespaces");
+		super(false, new String[] { "/listns" }, null, "Show namespaces");
 		this.plugin = plugin;
 	}
 

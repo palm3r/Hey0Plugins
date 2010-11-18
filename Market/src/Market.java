@@ -79,10 +79,6 @@ public class Market extends PluginEx {
 		loadBank();
 	}
 
-	protected void onDisable() {
-		setProperty(CURRENCY_UNIT_KEY, units.toString());
-	}
-
 	private void loadGoods() {
 		try {
 			String fileName = getProperty(GOODS_FILE_KEY, GOODS_FILE_DEFAULT);

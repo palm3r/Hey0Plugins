@@ -61,19 +61,20 @@ public class WarpEx extends PluginEx {
 	}
 
 	public boolean checkPermission(boolean modify, Player player, String ns) {
-		return ns == player.getName()
-				|| (!modify && etc.getServer().getPlayer(ns) != null)
-				|| player.canUseCommand("/warpex-" + (modify ? "modify-" : "") + ns);
+		return !modify
+				|| ns.equalsIgnoreCase(player.getName())
+				|| (ns.equalsIgnoreCase("*") && (player
+						.canUseCommand("/warpex-modify-*") || (!modify && player
+						.canUseCommand("/warpex-*"))))
+				|| (ns.equalsIgnoreCase("!") && (player
+						.canUseCommand("/warpex-modify-!") || (!modify && player
+						.canUseCommand("/warpex-!"))));
 	}
 
 	protected void onEnable() {
 		defaultNamespace = Enum.valueOf(NS.class,
 				Tools.Capitalize(getProperty(DEFAULT_NAMESPACE_KEY, "Personal")));
 		loadWarps();
-	}
-
-	protected void onDisable() {
-		setProperty(DEFAULT_NAMESPACE_KEY, defaultNamespace.toString());
 	}
 
 	private void loadWarps() {

@@ -3,7 +3,7 @@ public class SetWarpCommand extends Command {
 	private WarpEx plugin;
 
 	public SetWarpCommand(WarpEx plugin) {
-		super(new String[] { "/setwarp", "/sw" }, "<namespace:>[warp]",
+		super(false, new String[] { "/setwarp", "/sw" }, "<namespace:>[warp]",
 				"Create or overwrite warp");
 		this.plugin = plugin;
 	}
@@ -20,7 +20,7 @@ public class SetWarpCommand extends Command {
 			return true;
 		}
 		if (!plugin.checkPermission(true, player, p.first)) {
-			Chat.toPlayer(player, Colors.Rose + "Permission denied.");
+			Chat.toPlayer(player, Colors.Rose + "Permission denied");
 			return true;
 		}
 		plugin.setWarp(player, key);

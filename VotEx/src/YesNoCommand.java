@@ -3,7 +3,7 @@ public class YesNoCommand extends Command {
 	private VotEx plugin;
 
 	public YesNoCommand(VotEx plugin) {
-		super(new String[] { "/y", "/n" }, null, "Vote yes or no");
+		super(false, new String[] { "/y", "/n" }, null, "Vote yes or no");
 		this.plugin = plugin;
 	}
 

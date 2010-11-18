@@ -3,17 +3,20 @@ public class MoneyCommand extends Command {
 	private Market market;
 
 	public MoneyCommand(Market market) {
-		super(new String[] { "/money" }, null, "Show your money");
+		super(false, new String[] { "/money" }, null, "Show your money");
 		this.market = market;
 	}
 
 	public boolean call(Player player, String[] args) {
-		if (args.length > 1) {
+		if (args.length > 1 && player.canUseCommand("/market")) {
 			int money = market.getMoney(args[1]);
-			if (args.length > 2) {
+			if (args.length > 2 && player.isAdmin()) {
 				try {
+					int old = market.getMoney(args[1]);
 					money = Integer.valueOf(args[2]);
 					market.setMoney(args[1], money);
+					Log.info("Market: %s SET %s money %d to %d", player.getName(),
+							args[1], old, money);
 				} catch (Exception e) {
 					Chat.toPlayer(player, Colors.Rose + "Invalid argument: %s", args[2]);
 					return true;

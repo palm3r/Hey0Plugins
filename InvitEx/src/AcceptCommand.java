@@ -5,7 +5,7 @@ public class AcceptCommand extends Command {
 	private InvitEx plugin;
 
 	public AcceptCommand(InvitEx plugin) {
-		super(new String[] { "/accept" }, null, "Accept invite");
+		super(false, new String[] { "/accept" }, null, "Accept invite");
 		this.plugin = plugin;
 	}
 

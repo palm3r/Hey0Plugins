@@ -3,7 +3,7 @@ public class PriceCommand extends Command {
 	private Market market;
 
 	public PriceCommand(Market market) {
-		super(new String[] { "/price" }, "<amount> <item>", "Show price");
+		super(false, new String[] { "/price" }, "<amount> <item>", "Show price");
 		this.market = market;
 	}
 

@@ -4,7 +4,7 @@ public class SellCommand extends Command {
 	private Market market;
 
 	public SellCommand(Market market) {
-		super(new String[] { "/sell" }, "<amount> <item>", "Sell items");
+		super(false, new String[] { "/sell" }, "<amount> <item>", "Sell items");
 		this.market = market;
 	}
 
@@ -46,8 +46,8 @@ public class SellCommand extends Command {
 			total += price;
 			Chat.toPlayer(player, Colors.Gold + "%d %s sold for %s", amount,
 					item.getName(), market.currencyFormat(price));
-			Log.info("Market: %s SOLD %d %s received %s", player.getName(), amount,
-					item.getName(), market.currencyFormat(price));
+			Log.info("Market: %s SOLD %d %s received %d", player.getName(), amount,
+					item.getName(), price);
 		}
 		ct.clearContents();
 		for (Map.Entry<Integer, Integer> entry : rest.entrySet()) {
@@ -62,8 +62,7 @@ public class SellCommand extends Command {
 		market.saveBank();
 		Chat.toPlayer(player, Colors.LightGreen + "You received %s in total",
 				market.currencyFormat(total));
-		Log.info("Market: %s has %s now", player.getName(),
-				market.currencyFormat(money));
+		Log.info("Market: %s has %d now", player.getName(), money);
 		return true;
 	}
 }
