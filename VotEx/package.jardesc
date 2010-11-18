@@ -11,7 +11,7 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <javaElement handleIdentifier="=Common/src"/>
         <javaElement handleIdentifier="=VotEx/src"/>
+        <javaElement handleIdentifier="=Common/src"/>
     </selectedElements>
 </jardesc>
