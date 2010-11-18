@@ -1,4 +1,4 @@
-# WarpEx v1.2
+# WarpEx
 
 A plugin for Minecraft hMod that extends warp functions to support namespace.
 
