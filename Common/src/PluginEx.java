@@ -168,10 +168,16 @@ public abstract class PluginEx extends Plugin {
 		}
 
 		public boolean onCommand(Player player, String[] args) {
+			// for trimming each argument
+			List<String> list = new ArrayList<String>();
+			for (String a : args) {
+				list.add(a.trim());
+			}
+			String[] params = list.toArray(new String[0]);
 			for (Command c : commands) {
-				if (c.match(args[0])) {
+				if (c.match(params[0])) {
 					if (c.auth(player))
-						return c.call(player, args);
+						return c.call(player, params);
 				}
 			}
 			return this.listener != null ? this.listener.onCommand(player, args)
