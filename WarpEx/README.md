@@ -49,4 +49,7 @@ Show warps.
 Show all namespaces without global and secret.
 
 ## Download
-[WarpEx.jar](https://github.com/palm3r/Hey0Plugins/raw/master/plugins/WarpEx.jar)
+[Latest version](https://github.com/palm3r/Hey0Plugins/raw/master/WarpEx/build/latest/WarpEx.jar)
+
+## Source codes
+[Github](https://github.com/palm3r/Hey0Plugins/tree/master/WarpEx)
