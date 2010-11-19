@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="Hey0Plugins" basedir="." default="all">
+
+	<target name="all">
+		<ant dir="InvitEx" />
+		<ant dir="Market" />
+		<ant dir="VotEx" />
+		<ant dir="WarpEx" />
+		<ant dir="WebApi" />
+	</target>
+
+</project>

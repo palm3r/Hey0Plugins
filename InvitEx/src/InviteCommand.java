@@ -27,11 +27,13 @@ public class InviteCommand extends Command {
 		}
 		Pair<String, ScheduledFuture<?>> invite = plugin.getInvite(to);
 		if (invite != null) {
-			Chat.toPlayer(player, Colors.Gold + "%s is being invited by other player now", to);
+			Chat.toPlayer(player, Colors.Gold
+					+ "%s is being invited by other player now", to);
 			return true;
 		}
 		Chat.toPlayer(player, Colors.LightGreen + "You invited %s", to);
-		Chat.toPlayer(to, Colors.LightGreen + "%s invited you. type /accept to go", from);
+		Chat.toPlayer(to, Colors.LightGreen + "%s invited you. type /accept to go",
+				from);
 		plugin.addInvite(from, to, new Runnable() {
 			public void run() {
 				Chat.toPlayer(from, "Your invite was cancelled by timeout");

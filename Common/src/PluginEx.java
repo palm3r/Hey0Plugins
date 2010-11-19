@@ -1,5 +1,4 @@
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public abstract class PluginEx extends Plugin {
@@ -64,6 +63,12 @@ public abstract class PluginEx extends Plugin {
 	public final <K, V> void save(Map<K, V> data, String fileName,
 			Converter<Pair<K, V>, String> converter) throws IOException {
 		Tools.save(data, pluginName + File.separator + fileName, converter);
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T extends Plugin> T getPlugin(String name, Class<T> clazz) {
+		Plugin plugin = etc.getLoader().getPlugin(name);
+		return clazz.isInstance(plugin) ? (T) plugin : null;
 	}
 
 	protected void onInitialize() {

@@ -46,8 +46,8 @@ public class WarpEx extends PluginEx {
 	public Location getWarp(Player player, String key) {
 		Pair<String, String> p = normalizeKey(player, key);
 		key = p.first + ":" + p.second;
-		return checkPermission(false, player, p.first) && warps.containsKey(key) ? warps
-				.get(key) : null;
+		return checkPermission(false, player, p.first) && warps.containsKey(key)
+				? warps.get(key) : null;
 	}
 
 	public void setWarp(Player player, String key) {

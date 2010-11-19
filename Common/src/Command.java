@@ -17,7 +17,7 @@ public abstract class Command {
 	public boolean auth(Player player) {
 		return auth ? player.canUseCommand(aliases.get(0)) : true;
 	}
-	
+
 	public String getUsage(boolean withDescription) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(Colors.Rose + "Usage: " + Colors.White);

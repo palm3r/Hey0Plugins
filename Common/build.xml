@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="Common" basedir=".">
+
+	<path id="classpath">
+		<fileset dir="${basedir}/lib" />
+	</path>
+
+	<target name="compile">
+		<mkdir dir="${basedir}/bin" />
+		<javac srcdir="${basedir}/src" destdir="${basedir}/bin" includes="**/*.java" classpathref="classpath" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${basedir}/bin" />
+	</target>
+
+</project>
