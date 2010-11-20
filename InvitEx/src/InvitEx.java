@@ -15,7 +15,7 @@ public class InvitEx extends PluginEx {
 				PluginLoader.Hook.COMMAND);
 
 		this.scheduler = Executors.newSingleThreadScheduledExecutor();
-		this.invites = new HashMap<String, Pair<String, ScheduledFuture<?>>>();
+		this.invites = new TreeMap<String, Pair<String, ScheduledFuture<?>>>();
 
 		addCommand(new InviteCommand(this));
 	}

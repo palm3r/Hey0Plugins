@@ -1,19 +1,19 @@
 public class BuyCommand extends Command {
-	private Market market;
+	private Market plugin;
 
-	public BuyCommand(Market market) {
+	public BuyCommand(Market plugin) {
 		super(false, new String[] { "/buy" }, "<amount> <item>", "Buy items");
-		this.market = market;
+		this.plugin = plugin;
 	}
 
 	public boolean call(Player player, String[] args) {
-		Goods item = market.getGoods().get(player.getItemInHand());
+		MarketItem item = plugin.getGoods().get(player.getItemInHand());
 		int amount = 1;
 		if (args.length > 1) {
 			try {
 				amount = Integer.valueOf(args[1]);
 				if (args.length > 2) {
-					item = market.findGoods(args[2]);
+					item = plugin.findItem(args[2]);
 				}
 			} catch (Exception e) {
 			}
@@ -23,19 +23,10 @@ public class BuyCommand extends Command {
 			return true;
 		}
 		int payment = item.getActualPrice(true, amount);
-		if (item.getStock() == 0 || payment <= 0) {
-			Chat.toPlayer(player, Colors.Gold + "%s is sold out", item.getName());
-			return true;
-		}
-		if (amount > item.getStock()) {
-			Chat.toPlayer(player, Colors.Gold + "%s has only %d stock%s",
-					item.getName(), item.getStock(), item.getStock() == 1 ? "" : "s");
-			return true;
-		}
-		int money = market.getMoney(player.getName());
+		int money = plugin.getMoney(player.getName());
 		if (payment > money) {
 			Chat.toPlayer(player, Colors.Gold + "You need %s to buy (you have %s)",
-					market.currencyFormat(payment), market.currencyFormat(money));
+					plugin.formatMoney(payment), plugin.formatMoney(money));
 			return true;
 		}
 		if (!item.buy(amount)) {
@@ -46,13 +37,13 @@ public class BuyCommand extends Command {
 		Inventory inv = player.getInventory();
 		inv.giveItem(item.getId(), amount);
 		inv.updateInventory();
-		market.setMoney(player.getName(), money - payment);
-		market.saveGoods();
-		market.saveBank();
+		plugin.setMoney(player.getName(), money - payment);
+		plugin.saveGoods();
 		Chat.toPlayer(player, Colors.LightGreen + "You bought %d %s (paid %s)",
-				amount, item.getName(), market.currencyFormat(payment));
-		Log.info("Market: %s BOUGHT %d %s paid %d total %d", player.getName(),
-				amount, item.getName(), payment, money - payment);
+				amount, item.getName(), plugin.formatMoney(payment));
+		Log.info("Market: %s bought %d %s for %d (money %d -> %d)",
+				player.getName(), amount, item.getName(), payment, money, money
+						- payment);
 		return true;
 	}
 }

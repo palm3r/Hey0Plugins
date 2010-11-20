@@ -20,7 +20,7 @@ public class WebApi extends PluginEx {
 		initPluginEx("WebApi", null, PluginListener.Priority.LOW,
 				PluginLoader.Hook.BLOCK_BROKEN, PluginLoader.Hook.BLOCK_CREATED);
 
-		this.handlers = new HashMap<String, Pair<WebApiHandler, String>>() {
+		this.handlers = new TreeMap<String, Pair<WebApiHandler, String>>() {
 			{
 				put(PLAYERS_COUNT_KEY, new Pair<WebApiHandler, String>(
 						new PlayerCountHandler(), "/count/players"));

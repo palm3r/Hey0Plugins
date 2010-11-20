@@ -29,7 +29,7 @@ public class VotEx extends PluginEx {
 	}
 
 	public void beginVote(final String subject) {
-		answers = new HashMap<String, Boolean>();
+		answers = new TreeMap<String, Boolean>();
 		future = scheduler.schedule(new Runnable() {
 			public void run() {
 				int yes = 0;

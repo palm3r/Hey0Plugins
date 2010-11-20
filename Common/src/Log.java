@@ -16,11 +16,8 @@ public class Log {
 		log(Level.SEVERE, format, params);
 	}
 
-	public static void finest(String format, Object... params) {
-		log(Level.FINEST, format, params);
-	}
-
 	public static void log(Level level, String format, Object... params) {
 		logger.log(level, String.format(format, params));
 	}
+
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="MS932" standalone="no"?>
 <jardesc>
-    <jar path="plugins/VotEx.jar"/>
+    <jar path="VotEx/build/latest/VotEx.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/VotEx/package.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -11,7 +11,8 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <javaElement handleIdentifier="=Common/src"/>
+        <file path="/VotEx/README.md"/>
         <javaElement handleIdentifier="=VotEx/src"/>
+        <javaElement handleIdentifier="=Common/src"/>
     </selectedElements>
 </jardesc>

@@ -13,14 +13,14 @@ A plugin for Minecraft hMod that provides simple market and price fluctuation.
 				plugins/
 					Market/
 						plugin.ini
-						goods.txt
+						items.txt
 						money.txt
 
 1. Open server/bin/server.properties, and add Market to the value of plugins:
 
 		example) plugins=Market,...
 
-1. Open server/bin/groups.txt. add "/market" to the group which can use admin commands
+1. Open server/bin/groups.txt. add "/market" to the group which can change item settings in the market
 
 		example) mods:d:/market,....
 
@@ -33,7 +33,7 @@ Each line must be "key = value"
 
 		units = coin,coins // currency unit (singular and plural)
 
-### bin/Market/goods.txt
+### bin/Market/items.txt
 
 Includes item data handled in the market
 
@@ -82,7 +82,7 @@ Instructions:
 ### /market [item] &lt;key value&gt; ...
 
 Show and update item configuration in the market.
-See "goods.txt" section about key/value.
+See "items.txt" section about key/value.
 
 Examples:
 

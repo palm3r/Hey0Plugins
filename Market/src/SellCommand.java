@@ -1,15 +1,15 @@
 import java.util.*;
 
 public class SellCommand extends Command {
-	private Market market;
+	private Market plugin;
 
-	public SellCommand(Market market) {
+	public SellCommand(Market plugin) {
 		super(false, new String[] { "/sell" }, "<amount> <item>", "Sell items");
-		this.market = market;
+		this.plugin = plugin;
 	}
 
 	public boolean call(Player player, String[] args) {
-		Map<Integer, Integer> items = new HashMap<Integer, Integer>();
+		Map<Integer, Integer> items = new TreeMap<Integer, Integer>();
 		Inventory ct = player.getCraftingTable();
 		for (int slot = 0; slot < 4; ++slot) {
 			Item item = ct.getItemFromSlot(slot);
@@ -27,16 +27,17 @@ public class SellCommand extends Command {
 			return true;
 		}
 		int total = 0;
-		Map<Integer, Integer> rest = new HashMap<Integer, Integer>();
+		Map<Integer, Integer> rest = new TreeMap<Integer, Integer>();
 		for (Map.Entry<Integer, Integer> entry : items.entrySet()) {
 			int id = entry.getKey();
 			int amount = entry.getValue();
-			Goods item = market.getGoods().get(id);
+			MarketItem item = plugin.getGoods().get(id);
 			if (item == null || !item.isEnabled()) {
 				rest.put(id, amount);
 				continue;
 			}
-			int price = item.getActualPrice(false, amount);
+			int price = (int) Math.floor(item.getActualPrice(false, amount)
+					* plugin.getSalesPriceRate());
 			if (!item.sell(amount)) {
 				rest.put(id, amount);
 				Chat.toPlayer(player,
@@ -44,9 +45,9 @@ public class SellCommand extends Command {
 				continue;
 			}
 			total += price;
-			Chat.toPlayer(player, Colors.Gold + "%d %s sold for %s", amount,
-					item.getName(), market.currencyFormat(price));
-			Log.info("Market: %s SOLD %d %s received %d", player.getName(), amount,
+			Chat.toPlayer(player, Colors.LightGreen + "%d %s sold for %s", amount,
+					item.getName(), plugin.formatMoney(price));
+			Log.info("Market: %s sold %d %s for %d", player.getName(), amount,
 					item.getName(), price);
 		}
 		ct.clearContents();
@@ -56,13 +57,13 @@ public class SellCommand extends Command {
 			ct.giveItem(id, amount);
 		}
 		ct.updateInventory();
-		int money = market.getMoney(player.getName()) + total;
-		market.setMoney(player.getName(), money);
-		market.saveGoods();
-		market.saveBank();
+		int money = plugin.getMoney(player.getName());
+		plugin.setMoney(player.getName(), money + total);
+		plugin.saveGoods();
 		Chat.toPlayer(player, Colors.LightGreen + "You received %s in total",
-				market.currencyFormat(total));
-		Log.info("Market: %s has %d now", player.getName(), money);
+				plugin.formatMoney(total));
+		Log.info("Market: %s received %d total (money %d -> %d)", player.getName(),
+				total, money, money + total);
 		return true;
 	}
 }

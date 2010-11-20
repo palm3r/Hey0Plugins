@@ -3,7 +3,7 @@ import java.util.*;
 
 public abstract class PluginEx extends Plugin {
 
-	private static final String PROP_FILE = "plugin.ini";
+	public static final String INI_FILE = "plugin.ini";
 
 	private PluginListener listener;
 	private String pluginName;
@@ -19,13 +19,23 @@ public abstract class PluginEx extends Plugin {
 		this.hooks = hooks;
 		this.priority = priority;
 		this.commands = new ArrayList<Command>();
-		this.props = new HashMap<String, String>();
+		this.props = new TreeMap<String, String>();
 	}
 
+	/**
+	 * 
+	 * @param command
+	 */
 	public final void addCommand(Command command) {
 		commands.add(command);
 	}
 
+	/**
+	 * Remove Command
+	 * 
+	 * @param alias
+	 * @return
+	 */
 	public final List<Command> removeCommand(String alias) {
 		List<Command> removed = new ArrayList<Command>();
 		for (Command c : commands) {
@@ -37,10 +47,23 @@ public abstract class PluginEx extends Plugin {
 		return removed;
 	}
 
+	/**
+	 * Get property
+	 * 
+	 * @param key
+	 * @return
+	 */
 	public final String getProperty(String key) {
 		return props.get(key);
 	}
 
+	/**
+	 * Get property from plugin.ini
+	 * 
+	 * @param key
+	 * @param defaultValue
+	 * @return
+	 */
 	public final String getProperty(String key, String defaultValue) {
 		String value = defaultValue;
 		if (props.containsKey(key)) {
@@ -51,32 +74,61 @@ public abstract class PluginEx extends Plugin {
 		return value;
 	}
 
+	/**
+	 * Set property
+	 * 
+	 * @param key
+	 * @param value
+	 */
 	public final void setProperty(String key, String value) {
 		props.put(key, value);
 	}
 
+	/**
+	 * Load file from the directory only for the plugin.
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 * @param fileName
+	 * @param converter
+	 * @return
+	 * @throws IOException
+	 */
 	public final <K, V> Map<K, V> load(String fileName,
 			Converter<String, Pair<K, V>> converter) throws IOException {
 		return Tools.load(pluginName + File.separator + fileName, converter);
 	}
 
+	/**
+	 * Save file to the directory only for the plugin.
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 * @param data
+	 * @param fileName
+	 * @param converter
+	 * @throws IOException
+	 */
 	public final <K, V> void save(Map<K, V> data, String fileName,
 			Converter<Pair<K, V>, String> converter) throws IOException {
 		Tools.save(data, pluginName + File.separator + fileName, converter);
 	}
 
-	@SuppressWarnings("unchecked")
-	public <T extends Plugin> T getPlugin(String name, Class<T> clazz) {
-		Plugin plugin = etc.getLoader().getPlugin(name);
-		return clazz.isInstance(plugin) ? (T) plugin : null;
-	}
-
+	/**
+	 * For override
+	 */
 	protected void onInitialize() {
 	}
 
+	/**
+	 * For override
+	 */
 	protected void onEnable() {
 	}
 
+	/**
+	 * For override
+	 */
 	protected void onDisable() {
 	}
 
@@ -85,6 +137,7 @@ public abstract class PluginEx extends Plugin {
 			etc.getLoader().addListener(hook, listener, this, priority);
 		}
 		onInitialize();
+		Log.info("%s initialized", pluginName);
 	}
 
 	public final void enable() {
@@ -93,7 +146,12 @@ public abstract class PluginEx extends Plugin {
 		}
 		boolean loadSuccessful = false;
 		try {
-			loadProperties();
+			props = load(INI_FILE, new Converter<String, Pair<String, String>>() {
+				public Pair<String, String> convert(String value) {
+					String[] split = value.split("=", 2);
+					return new Pair<String, String>(split[0].trim(), split[1].trim());
+				}
+			});
 			loadSuccessful = true;
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -101,7 +159,11 @@ public abstract class PluginEx extends Plugin {
 		onEnable();
 		if (!loadSuccessful) {
 			try {
-				saveProperties();
+				save(props, INI_FILE, new Converter<Pair<String, String>, String>() {
+					public String convert(Pair<String, String> value) {
+						return value.first + " = " + value.second;
+					}
+				});
 			} catch (Exception e) {
 			}
 		}
@@ -114,23 +176,6 @@ public abstract class PluginEx extends Plugin {
 		}
 		onDisable();
 		Log.info("%s disabled", pluginName);
-	}
-
-	public final void loadProperties() throws IOException {
-		props = load(PROP_FILE, new Converter<String, Pair<String, String>>() {
-			public Pair<String, String> convert(String value) {
-				String[] split = value.split("=", 2);
-				return new Pair<String, String>(split[0].trim(), split[1].trim());
-			}
-		});
-	}
-
-	public final void saveProperties() throws IOException {
-		save(props, PROP_FILE, new Converter<Pair<String, String>, String>() {
-			public String convert(Pair<String, String> value) {
-				return value.first + " = " + value.second;
-			}
-		});
 	}
 
 	private final class Listener extends PluginListener {
@@ -181,7 +226,7 @@ public abstract class PluginEx extends Plugin {
 			String[] params = list.toArray(new String[0]);
 			for (Command c : commands) {
 				if (c.match(params[0])) {
-					if (c.auth(player))
+					if (c.canUseCommand(player))
 						return c.call(player, params);
 				}
 			}

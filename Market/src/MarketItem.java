@@ -1,27 +1,25 @@
-public class Goods {
+public class MarketItem {
 
 	private int id;
 	private String name;
 	private boolean enabled;
-	private int price;
+	private double price;
 	private double factor;
-	private int stock;
 	private int balance;
 
-	public Goods(String str) {
+	public MarketItem(String str) {
 		String[] split = str.split(",");
 		this.id = Integer.valueOf(split[0]);
 		this.name = split[1];
 		this.enabled = Integer.valueOf(split[2]) != 0 ? true : false;
-		this.price = Integer.valueOf(split[3]);
+		this.price = Double.valueOf(split[3]);
 		this.factor = Double.valueOf(split[4]);
-		this.stock = Integer.valueOf(split[5]);
-		this.balance = Integer.valueOf(split[6]);
+		this.balance = Integer.valueOf(split[5]);
 	}
 
 	public String toString() {
-		return String.format("%d,%s,%d,%d,%f,%d,%d", id, name, enabled ? 1 : 0,
-				price, factor, stock, balance);
+		return String.format("%d,%s,%d,%f,%f,%d", id, name, enabled ? 1 : 0, price,
+				factor, balance);
 	}
 
 	public int getId() {
@@ -44,20 +42,12 @@ public class Goods {
 		this.enabled = enabled;
 	}
 
-	public int getPrice() {
+	public double getPrice() {
 		return price;
 	}
 
-	public void setPrice(int price) {
+	public void setPrice(double price) {
 		this.price = price;
-	}
-
-	public int getStock() {
-		return stock;
-	}
-
-	public void setStock(int stock) {
-		this.stock = stock;
 	}
 
 	public int getBalance() {
@@ -76,28 +66,34 @@ public class Goods {
 		this.factor = factor;
 	}
 
-	public int getActualPrice(boolean purchase, int amount) {
-		// int b = balance + (amount * (purchase ? 1 : -1));
-		double up = price + (balance * (price * factor / 100.0) / 100.0);
-		if (up < price * 0.1)
-			up = price * 0.1;
-		return (int) Math.floor(up * amount);
+	public int getActualPrice(boolean buy, int amount) {
+		double p = price, total = 0;
+		for (int i = 0; i < amount; ++i) {
+			total += (p < 1 ? 1 : p);
+			p += (p * (factor / (100.0 + (buy ? 0 : factor)))) * (buy ? 1 : -1);
+		}
+		return (int) Math.floor(total);
 	}
 
 	public boolean buy(int amount) {
-		if (!enabled || stock <= amount)
+		if (!enabled)
 			return false;
-		stock -= amount;
 		balance += amount;
+		for (int i = 0; i < amount; ++i) {
+			price += price * (factor / 100.0);
+		}
 		return true;
 	}
 
 	public boolean sell(int amount) {
-		if (!enabled) {
+		if (!enabled)
 			return false;
-		}
-		stock += amount;
 		balance -= amount;
+		for (int i = 0; i < amount && price > 2; ++i) {
+			price -= price * (factor / (100.0 + factor));
+			if (price < 2)
+				price = 2;
+		}
 		return true;
 	}
 

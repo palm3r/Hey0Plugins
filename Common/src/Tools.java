@@ -65,7 +65,7 @@ public class Tools {
 
 	public static <K, V> Map<K, V> load(String fileName,
 			Converter<String, Pair<K, V>> converter) throws IOException {
-		return load(fileName, converter, new HashMap<K, V>());
+		return load(fileName, converter, new TreeMap<K, V>());
 	}
 
 	public static <K, V> Map<K, V> load(String fileName,

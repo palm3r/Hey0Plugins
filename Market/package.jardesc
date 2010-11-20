@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="MS932" standalone="no"?>
 <jardesc>
-    <jar path="plugins/Market.jar"/>
+    <jar path="Market/build/latest/Market.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/Market/package.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -12,6 +12,7 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
         <javaElement handleIdentifier="=Common/src"/>
+        <file path="/Market/README.md"/>
         <javaElement handleIdentifier="=Market/src"/>
     </selectedElements>
 </jardesc>

@@ -18,7 +18,7 @@ public class WarpEx extends PluginEx {
 	private static final String DATA_FILE = "data.txt";
 	private static final String DEFAULT_NAMESPACE_KEY = "default-namespace";
 
-	private Map<String, Location> warps = new HashMap<String, Location>();
+	private Map<String, Location> warps = new TreeMap<String, Location>();
 	private NS defaultNamespace = NS.Personal;
 
 	public WarpEx() {

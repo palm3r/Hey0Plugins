@@ -14,7 +14,7 @@ public abstract class Command {
 		this.description = description;
 	}
 
-	public boolean auth(Player player) {
+	public boolean canUseCommand(Player player) {
 		return auth ? player.canUseCommand(aliases.get(0)) : true;
 	}
 
