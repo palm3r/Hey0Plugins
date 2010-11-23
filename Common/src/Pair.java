@@ -14,4 +14,20 @@ public class Pair<T1, T2> {
 	public String toString() {
 		return first + "," + second;
 	}
+
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Pair))
+			return false;
+		Pair<?, ?> pair = (Pair<?, ?>) obj;
+		return pair.first.equals(first) && pair.second.equals(second);
+	}
+
+	public int hashCode() {
+		final int multiplier = 42463;
+		int hash = Pair.class.hashCode();
+		hash = multiplier * hash + (first == null ? 102199 : first.hashCode());
+		hash = multiplier * hash + (second == null ? 100237 : second.hashCode());
+		return hash;
+	}
+
 }

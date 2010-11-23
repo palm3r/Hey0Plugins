@@ -5,29 +5,36 @@ public abstract class PluginEx extends Plugin {
 
 	public static final String INI_FILE = "plugin.ini";
 
-	private PluginListener listener;
+	private Map<PluginLoader.Hook, HookInfo> listeners;
 	private String pluginName;
-	private PluginLoader.Hook[] hooks;
-	private PluginListener.Priority priority;
 	private List<Command> commands;
 	private Map<String, String> props;
 
-	protected void initPluginEx(String name, PluginListener listener,
-			PluginListener.Priority priority, PluginLoader.Hook... hooks) {
+	protected PluginEx(String name) {
 		this.pluginName = name;
-		this.listener = new Listener(listener);
-		this.hooks = hooks;
-		this.priority = priority;
+		this.listeners = new HashMap<PluginLoader.Hook, HookInfo>();
 		this.commands = new ArrayList<Command>();
 		this.props = new TreeMap<String, String>();
+	}
+
+	public final void addHook(PluginLoader.Hook hook,
+		PluginListener.Priority priority) {
+		addHook(hook, priority, null);
+	}
+
+	public final void addHook(PluginLoader.Hook hook,
+		PluginListener.Priority priority, PluginListener listener) {
+		listeners.put(hook, new HookInfo(new Shifter(listener), priority));
 	}
 
 	/**
 	 * 
 	 * @param command
 	 */
-	public final void addCommand(Command command) {
-		commands.add(command);
+	public final void addCommand(Command... commands) {
+		for (Command c : commands) {
+			this.commands.add(c);
+		}
 	}
 
 	/**
@@ -36,15 +43,11 @@ public abstract class PluginEx extends Plugin {
 	 * @param alias
 	 * @return
 	 */
-	public final List<Command> removeCommand(String alias) {
-		List<Command> removed = new ArrayList<Command>();
+	public final void removeCommand(Command... commands) {
 		for (Command c : commands) {
-			if (c.match(alias)) {
-				removed.add(c);
-				commands.remove(c);
-			}
+			this.commands.remove(c);
+			c.disable();
 		}
-		return removed;
 	}
 
 	/**
@@ -84,6 +87,22 @@ public abstract class PluginEx extends Plugin {
 		props.put(key, value);
 	}
 
+	public final <T> Set<T> loadSet(String fileName,
+		Converter<String, T> converter) throws IOException {
+		return Tools.loadSet(pluginName + File.separator + fileName, converter);
+	}
+
+	public final <T> Set<T> loadSet(String fileName,
+		Converter<String, T> converter, Set<T> set) throws IOException {
+		return Tools
+			.loadSet(pluginName + File.separator + fileName, converter, set);
+	}
+
+	public final <T> void saveSet(Set<T> data, String fileName,
+		Converter<T, String> converter) throws IOException {
+		Tools.saveSet(data, pluginName + File.separator + fileName, converter);
+	}
+
 	/**
 	 * Load file from the directory only for the plugin.
 	 * 
@@ -94,9 +113,15 @@ public abstract class PluginEx extends Plugin {
 	 * @return
 	 * @throws IOException
 	 */
-	public final <K, V> Map<K, V> load(String fileName,
-			Converter<String, Pair<K, V>> converter) throws IOException {
-		return Tools.load(pluginName + File.separator + fileName, converter);
+	public final <K, V> Map<K, V> loadMap(String fileName,
+		Converter<String, Pair<K, V>> converter) throws IOException {
+		return Tools.loadMap(pluginName + File.separator + fileName, converter);
+	}
+
+	public final <K, V> Map<K, V> loadMap(String fileName,
+		Converter<String, Pair<K, V>> converter, Map<K, V> map) throws IOException {
+		return Tools
+			.loadMap(pluginName + File.separator + fileName, converter, map);
 	}
 
 	/**
@@ -109,15 +134,9 @@ public abstract class PluginEx extends Plugin {
 	 * @param converter
 	 * @throws IOException
 	 */
-	public final <K, V> void save(Map<K, V> data, String fileName,
-			Converter<Pair<K, V>, String> converter) throws IOException {
-		Tools.save(data, pluginName + File.separator + fileName, converter);
-	}
-
-	/**
-	 * For override
-	 */
-	protected void onInitialize() {
+	public final <K, V> void saveMap(Map<K, V> data, String fileName,
+		Converter<Pair<K, V>, String> converter) throws IOException {
+		Tools.saveMap(data, pluginName + File.separator + fileName, converter);
 	}
 
 	/**
@@ -132,45 +151,39 @@ public abstract class PluginEx extends Plugin {
 	protected void onDisable() {
 	}
 
-	public final void initialize() {
-		for (PluginLoader.Hook hook : hooks) {
-			etc.getLoader().addListener(hook, listener, this, priority);
-		}
-		onInitialize();
-		Log.info("%s initialized", pluginName);
-	}
-
 	public final void enable() {
-		for (Command c : commands) {
-			c.enable();
-		}
-		boolean loadSuccessful = false;
 		try {
-			props = load(INI_FILE, new Converter<String, Pair<String, String>>() {
-				public Pair<String, String> convert(String value) {
+			props = loadMap(INI_FILE, new Converter<String, Pair<String, String>>() {
+				public Pair<String, String> convertTo(String value) {
 					String[] split = value.split("=", 2);
 					return new Pair<String, String>(split[0].trim(), split[1].trim());
 				}
 			});
-			loadSuccessful = true;
 		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		onEnable();
-		if (!loadSuccessful) {
-			try {
-				save(props, INI_FILE, new Converter<Pair<String, String>, String>() {
-					public String convert(Pair<String, String> value) {
-						return value.first + " = " + value.second;
-					}
-				});
-			} catch (Exception e) {
-			}
+		try {
+			saveMap(props, INI_FILE, new Converter<Pair<String, String>, String>() {
+				public String convertTo(Pair<String, String> value) {
+					return value.first + " = " + value.second;
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		for (Command c : commands) {
+			c.enable();
+		}
+		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : listeners.entrySet()) {
+			entry.getValue().enable(entry.getKey(), this);
 		}
 		Log.info("%s enabled", pluginName);
 	}
 
 	public final void disable() {
+		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : listeners.entrySet()) {
+			entry.getValue().disable();
+		}
 		for (Command c : commands) {
 			c.disable();
 		}
@@ -178,10 +191,35 @@ public abstract class PluginEx extends Plugin {
 		Log.info("%s disabled", pluginName);
 	}
 
-	private final class Listener extends PluginListener {
+	private class HookInfo {
+		private PluginListener listener;
+		private PluginListener.Priority priority;
+		private PluginRegisteredListener registered;
+
+		public HookInfo(PluginListener listener, PluginListener.Priority priority) {
+			this.listener = listener;
+			this.priority = priority;
+		}
+
+		public void enable(PluginLoader.Hook hook, Plugin plugin) {
+			if (registered == null) {
+				registered = etc.getLoader().addListener(hook, listener, plugin,
+					priority);
+			}
+		}
+
+		public void disable() {
+			if (registered != null) {
+				etc.getLoader().removeListener(registered);
+				registered = null;
+			}
+		}
+	}
+
+	private final class Shifter extends PluginListener {
 		private PluginListener listener;
 
-		public Listener(PluginListener listener) {
+		public Shifter(PluginListener listener) {
 			this.listener = listener;
 		}
 
@@ -199,18 +237,18 @@ public abstract class PluginEx extends Plugin {
 
 		public boolean onBlockBreak(Player player, Block block) {
 			return this.listener != null ? this.listener.onBlockBreak(player, block)
-					: false;
+				: false;
 		}
 
 		public boolean onBlockCreate(Player player, Block placed, Block clicked,
-				int item) {
+			int item) {
 			return this.listener != null ? this.listener.onBlockCreate(player,
-					placed, clicked, item) : false;
+				placed, clicked, item) : false;
 		}
 
 		public boolean onBlockDestroy(Player player, Block block) {
 			return this.listener != null ? this.listener
-					.onBlockDestroy(player, block) : false;
+				.onBlockDestroy(player, block) : false;
 		}
 
 		public boolean onChat(Player player, String msg) {
@@ -218,35 +256,32 @@ public abstract class PluginEx extends Plugin {
 		}
 
 		public boolean onCommand(Player player, String[] args) {
-			// for trimming each argument
-			List<String> list = new ArrayList<String>();
-			for (String a : args) {
-				list.add(a.trim());
+			String command = args[0];
+			List<String> args2 = new LinkedList<String>();
+			for (int i = 1; i < args.length; ++i) {
+				args2.add(args[i].trim());
 			}
-			String[] params = list.toArray(new String[0]);
 			for (Command c : commands) {
-				if (c.match(params[0])) {
-					if (c.canUseCommand(player))
-						return c.call(player, params);
-				}
+				if (c.match(command) && c.canUseCommand(player))
+					return c.call(player, command, args2);
 			}
 			return this.listener != null ? this.listener.onCommand(player, args)
-					: false;
+				: false;
 		}
 
 		public boolean onComplexBlockChange(Player player, ComplexBlock block) {
 			return this.listener != null ? this.listener.onComplexBlockChange(player,
-					block) : false;
+				block) : false;
 		}
 
 		public boolean onConsoleCommand(String[] args) {
 			return this.listener != null ? this.listener.onConsoleCommand(args)
-					: false;
+				: false;
 		}
 
 		public boolean onCraftInventoryChange(Player player) {
 			return this.listener != null ? this.listener
-					.onCraftInventoryChange(player) : false;
+				.onCraftInventoryChange(player) : false;
 		}
 
 		public void onDisconnect(Player player) {
@@ -257,12 +292,12 @@ public abstract class PluginEx extends Plugin {
 
 		public boolean onEquipmentChange(Player player) {
 			return this.listener != null ? this.listener.onEquipmentChange(player)
-					: false;
+				: false;
 		}
 
 		public boolean onInventoryChange(Player player) {
 			return this.listener != null ? this.listener.onInventoryChange(player)
-					: false;
+				: false;
 		}
 
 		public void onIpBan(Player mod, Player player, String reason) {
@@ -273,7 +308,7 @@ public abstract class PluginEx extends Plugin {
 
 		public boolean onItemDrop(Player player, Item item) {
 			return this.listener != null ? this.listener.onItemDrop(player, item)
-					: false;
+				: false;
 		}
 
 		public void onKick(Player mod, Player player, String reason) {
@@ -300,12 +335,13 @@ public abstract class PluginEx extends Plugin {
 
 		public boolean onSendComplexBlock(Player player, ComplexBlock block) {
 			return this.listener != null ? this.listener.onSendComplexBlock(player,
-					block) : false;
+				block) : false;
 		}
 
 		public boolean onTeleport(Player player, Location from, Location to) {
 			return this.listener != null ? this.listener.onTeleport(player, from, to)
-					: false;
+				: false;
 		}
 	}
+
 }

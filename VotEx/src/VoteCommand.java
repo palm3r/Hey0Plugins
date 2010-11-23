@@ -1,31 +1,32 @@
+import java.util.*;
+
 public class VoteCommand extends Command {
 
+	public static final String COMMAND = "/vote";
 	private VotEx plugin;
 
 	public VoteCommand(VotEx plugin) {
-		super(true, new String[] { "/vote" }, "[subject]", "Begin vote");
+		super(COMMAND, null, "[subject]", "Begin vote", COMMAND);
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String[] args) {
+	public boolean call(Player player, String command, List<String> args) {
 		StringBuilder sb = new StringBuilder();
-		for (int i = 1; i < args.length; ++i) {
+		for (String a : args) {
 			if (sb.length() > 0) {
 				sb.append(" ");
 			}
-			sb.append(args[i].trim());
+			sb.append(a.trim());
 		}
 		String subject = sb.toString().trim();
 		if (subject.length() == 0) {
-			Chat.toPlayer(player, getUsage(false));
+			Chat.toPlayer(player, getUsage(false, true));
 			return true;
 		}
 		if (plugin.isVoting()) {
-			Chat.toPlayer(player, Colors.Rose + "Another vote on progress now");
+			Chat.toPlayer(player, (Colors.Rose + "Another vote on progress now"));
 			return true;
 		}
-		Chat.toBroadcast(Colors.LightBlue + "[VOTE] " + Colors.White + subject);
-		Chat.toBroadcast("Please vote /y or /n");
 		plugin.beginVote(subject);
 		return true;
 	}

@@ -24,4 +24,4 @@ Accept invite (will jump to position of player who invite)<br />
 If invitee didn't use command in expire time, invitation will be cancelled.
 
 ## Download
-[InvitEx.jar](https://github.com/palm3r/Hey0Plugins/raw/master/plugins/InvitEx.jar)
+[Latest version](https://github.com/palm3r/Hey0Plugins/raw/master/InvitEx/build/latest/InvitEx.jar)

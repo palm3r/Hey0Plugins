@@ -1,43 +1,51 @@
-import java.util.concurrent.ScheduledFuture;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class InviteCommand extends Command {
 
 	private InvitEx plugin;
 
 	public InviteCommand(InvitEx plugin) {
-		super(false, new String[] { "/invite" }, "[player]", "Invite player");
+		super("/invite", null, "[player]", "Invite player", "/invite");
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String[] args) {
-		if (args.length < 2) {
-			Chat.toPlayer(player, getUsage(false));
+	public boolean call(Player player, String command, List<String> args) {
+		if (args.isEmpty()) {
+			Chat.toPlayer(player, getUsage(false, true));
 			return true;
 		}
-		final String from = player.getName();
-		final String to = args[1];
-		if (to.equalsIgnoreCase(from)) {
-			Chat.toPlayer(player, Colors.Rose + "You cannot invite yourself");
+		final String hostName = player.getName();
+		final String guestName = args.get(0);
+		if (guestName.equalsIgnoreCase(hostName)) {
+			Chat.toPlayer(player, (Colors.Rose + "You can\'t invite yourself"));
 			return true;
 		}
-		Player guest = etc.getServer().getPlayer(to);
+		Player guest = etc.getServer().getPlayer(guestName);
 		if (guest == null) {
-			Chat.toPlayer(player, Colors.Gold + "%s is not online", to);
+			Chat.toPlayer(player, (Colors.LightGreen + guestName)
+				+ (Colors.Rose + " is not online"));
 			return true;
 		}
-		Pair<String, ScheduledFuture<?>> invite = plugin.getInvite(to);
+		Pair<String, ScheduledFuture<?>> invite = plugin.getInvite(guestName);
 		if (invite != null) {
-			Chat.toPlayer(player, Colors.Gold
-					+ "%s is being invited by other player now", to);
+			Chat.toPlayer(player, (Colors.LightGreen + guestName)
+				+ (Colors.Rose + " is being invited by other player"));
 			return true;
 		}
-		Chat.toPlayer(player, Colors.LightGreen + "You invited %s", to);
-		Chat.toPlayer(to, Colors.LightGreen + "%s invited you. type /accept to go",
-				from);
-		plugin.addInvite(from, to, new Runnable() {
+		Chat.toPlayer(player, (Colors.LightGray + "You invited ")
+			+ (Colors.LightGreen + guestName));
+		Chat.toPlayer(guestName, (Colors.LightGreen + hostName)
+			+ (Colors.LightGray + " invited you. type ")
+			+ (Colors.LightPurple + "/accept")
+			+ (Colors.LightGray + " if you accept"));
+		plugin.addInvite(hostName, guestName, new Runnable() {
 			public void run() {
-				Chat.toPlayer(from, "Your invite was cancelled by timeout");
-				Chat.toPlayer(to, "%s\'s invite was cancelled by timeout", from);
+				Chat.toPlayer(hostName,
+					(Colors.Rose + "Your invite was cancelled by timeout"));
+				Chat.toPlayer(guestName, (Colors.LightGreen + hostName)
+					+ (Colors.Rose + "\'s invite was cancelled by timeout"));
+				plugin.removeInvite(guestName);
 			}
 		});
 		return true;

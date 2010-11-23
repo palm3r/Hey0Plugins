@@ -7,36 +7,38 @@ import com.sun.net.httpserver.*;
 public class WebApi extends PluginEx {
 
 	public static final String PORT_KEY = "port";
-	public static final String PLAYERS_COUNT_KEY = "players-count";
-	public static final String MOBS_COUNT_KEY = "mobs-count";
-	public static final String BLOCKS_PER_MINUTES_KEY = "blocks-per-minutes";
-	public static final String CONSLE_COMMAND_KEY = "console-command";
+	public static final String PLAYERS_COUNT_KEY = "players-count-path";
+	public static final String MOBS_COUNT_KEY = "mobs-count-path";
+	public static final String BLOCKS_PER_MINUTES_KEY = "blocks-per-minutes-path";
+	public static final String CONSLE_COMMAND_KEY = "console-command-path";
 
 	private Map<String, Pair<WebApiHandler, String>> handlers;
 	private HttpServer httpd;
 
 	@SuppressWarnings("serial")
 	public WebApi() throws IOException {
-		initPluginEx("WebApi", null, PluginListener.Priority.LOW,
-				PluginLoader.Hook.BLOCK_BROKEN, PluginLoader.Hook.BLOCK_CREATED);
+		super("WebApi");
 
 		this.handlers = new TreeMap<String, Pair<WebApiHandler, String>>() {
 			{
 				put(PLAYERS_COUNT_KEY, new Pair<WebApiHandler, String>(
-						new PlayerCountHandler(), "/count/players"));
+					new PlayerCountHandler(), "/count/players"));
 				put(MOBS_COUNT_KEY, new Pair<WebApiHandler, String>(
-						new MobCountHandler(), "/count/mobs"));
+					new MobCountHandler(), "/count/mobs"));
 				put(CONSLE_COMMAND_KEY, new Pair<WebApiHandler, String>(
-						new CommandHandler(), "/command"));
+					new CommandHandler(), "/command"));
 			}
 		};
+
+		addHook(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.LOW);
+		addHook(PluginLoader.Hook.BLOCK_CREATED, PluginListener.Priority.LOW);
 	}
 
 	protected void onEnable() {
 		try {
 			httpd = HttpServer.create();
 			for (final Map.Entry<String, Pair<WebApiHandler, String>> entry : handlers
-					.entrySet()) {
+				.entrySet()) {
 				String path = getProperty(entry.getKey(), entry.getValue().second);
 				if (path == null || path.isEmpty() || entry.getValue().first == null)
 					continue;
@@ -44,19 +46,19 @@ public class WebApi extends PluginEx {
 					public void handle(HttpExchange exchange) {
 						try {
 							Log.info("WebApi: [%s] %s %s", exchange.getRemoteAddress()
-									.toString(), exchange.getRequestMethod(), exchange
-									.getRequestURI().toString());
+								.toString(), exchange.getRequestMethod(), exchange
+								.getRequestURI().toString());
 							String path = exchange.getRequestURI().getPath()
-									.substring(exchange.getHttpContext().getPath().length());
+								.substring(exchange.getHttpContext().getPath().length());
 							List<String> args = Tools.split(path, "/",
-									new Converter<String, String>() {
-										public String convert(String value) {
-											return !value.isEmpty() ? value : null;
-										}
-									});
+								new Converter<String, String>() {
+									public String convertTo(String value) {
+										return !value.isEmpty() ? value : null;
+									}
+								});
 							PrintWriter pw = new PrintWriter(exchange.getResponseBody());
 							String[] a = args.size() > 0 ? (String[]) args
-									.toArray(new String[0]) : new String[] {};
+								.toArray(new String[0]) : new String[] {};
 							int status = entry.getValue().first.call(pw, a);
 							exchange.sendResponseHeaders(status, 0);
 							pw.flush();

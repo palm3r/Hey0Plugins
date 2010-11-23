@@ -1,57 +1,72 @@
-import java.io.IOException;
+import java.io.*;
+import java.text.NumberFormat;
 import java.util.*;
+import java.util.Map.*;
 
 public class Market extends PluginEx {
 
-	public static final String ITEMS_FILE_KEY = "items";
+	public static final String ITEMS_FILE_KEY = "items-file";
 	public static final String ITEMS_FILE_DEFAULT = "items.txt";
 
-	public static final String MONEY_FILE_KEY = "money";
+	public static final String MONEY_FILE_KEY = "money-file";
 	public static final String MONEY_FILE_DEFAULT = "money.txt";
 
-	public static final String UNIT_KEY = "units";
+	public static final String UNIT_KEY = "currency-unit";
 	public static final String UNIT_DEFAULT = "coin,coins";
 
-	public static final String SALES_PRICE_RATE_KEY = "sales-price";
-	public static final String SALES_PRICE_RATE_DEFAULT = "0.5";
-
 	private Map<Integer, MarketItem> items;
-	private Map<String, Integer> money;
+	private Map<String, Long> bank;
+	private List<Map.Entry<String, Long>> richestPlayersCache;
 	private Pair<String, String> unit;
-	private double salesPriceRate;
+	private Command market, price, buy, sell, money, top5;
 
 	public Market() {
-		initPluginEx("Market", null, PluginListener.Priority.LOW,
-				PluginLoader.Hook.COMMAND, PluginLoader.Hook.LOGIN);
+		super("Market");
 
 		items = new TreeMap<Integer, MarketItem>();
-		money = new TreeMap<String, Integer>();
+		bank = new TreeMap<String, Long>();
+		market = new MarketCommand(this);
+		price = new PriceCommand(this);
+		buy = new BuyCommand(this);
+		sell = new SellCommand(this);
+		money = new MoneyCommand(this);
+		top5 = new Top5Command(this);
 
-		addCommand(new MoneyCommand(this));
-		addCommand(new MarketCommand(this));
-		addCommand(new PriceCommand(this));
-		addCommand(new BuyCommand(this));
-		addCommand(new SellCommand(this));
+		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
+		addHook(PluginLoader.Hook.LOGIN, PluginListener.Priority.LOW);
 	}
 
-	public double getSalesPriceRate() {
-		return salesPriceRate;
+	public List<Map.Entry<String, Long>> getRichestPlayers() {
+		if (richestPlayersCache == null) {
+			richestPlayersCache = new ArrayList<Map.Entry<String, Long>>(
+				bank.entrySet());
+			Collections.sort(richestPlayersCache,
+				new Comparator<Map.Entry<String, Long>>() {
+					public int compare(Entry<String, Long> o1, Entry<String, Long> o2) {
+						return o1.getValue() == o2.getValue() ? 0 : (o1.getValue() < o2
+							.getValue() ? 1 : -1);
+					}
+				});
+		}
+		return richestPlayersCache;
 	}
 
-	public int getMoney(String player) {
-		return money.containsKey(player) ? money.get(player) : 0;
+	public long getMoney(String player) {
+		return bank.containsKey(player) ? bank.get(player) : 0;
 	}
 
-	public void setMoney(String player, int amount) {
-		money.put(player, amount);
+	public void setMoney(String player, long amount) {
+		bank.put(player, amount);
 		saveMoney();
+		richestPlayersCache = null;
 	}
 
-	public String formatMoney(int amount) {
-		return amount + " " + (amount == 1 ? unit.first : unit.second);
+	public String formatMoney(long amount) {
+		return Colors.Gold + NumberFormat.getInstance().format(amount)
+			+ Colors.LightGray + " " + (amount == 1 ? unit.first : unit.second);
 	}
 
-	public Map<Integer, MarketItem> getGoods() {
+	public Map<Integer, MarketItem> getItems() {
 		return items;
 	}
 
@@ -75,21 +90,23 @@ public class Market extends PluginEx {
 	protected void onEnable() {
 		String[] u = getProperty(UNIT_KEY, UNIT_DEFAULT).split(",");
 		unit = Pair.create(u[0], u.length > 1 ? u[1] : u[0]);
-		salesPriceRate = Double.valueOf(getProperty(SALES_PRICE_RATE_KEY,
-				SALES_PRICE_RATE_DEFAULT));
 		loadMoney();
-		loadGoods();
+		loadItems();
+		addCommand(market, price, buy, sell, money, top5);
+	}
+
+	protected void onDisable() {
+		removeCommand(market, price, buy, sell, money, top5);
 	}
 
 	private void loadMoney() {
 		try {
 			String fileName = getProperty(MONEY_FILE_KEY, MONEY_FILE_DEFAULT);
-			money = load(fileName, new Converter<String, Pair<String, Integer>>() {
-				public Pair<String, Integer> convert(String value) {
+			bank = loadMap(fileName, new Converter<String, Pair<String, Long>>() {
+				public Pair<String, Long> convertTo(String value) {
 					try {
 						String[] split = value.split(":", 2);
-						return new Pair<String, Integer>(split[0], Integer
-								.valueOf(split[1]));
+						return new Pair<String, Long>(split[0], Long.valueOf(split[1]));
 					} catch (Exception e) {
 						e.printStackTrace();
 						return null;
@@ -103,8 +120,8 @@ public class Market extends PluginEx {
 	public void saveMoney() {
 		try {
 			String fileName = getProperty(MONEY_FILE_KEY, MONEY_FILE_DEFAULT);
-			save(money, fileName, new Converter<Pair<String, Integer>, String>() {
-				public String convert(Pair<String, Integer> value) {
+			saveMap(bank, fileName, new Converter<Pair<String, Long>, String>() {
+				public String convertTo(Pair<String, Long> value) {
 					return value.first + ":" + value.second.toString();
 				}
 			});
@@ -113,34 +130,35 @@ public class Market extends PluginEx {
 		}
 	}
 
-	private void loadGoods() {
+	private void loadItems() {
 		try {
 			String fileName = getProperty(ITEMS_FILE_KEY, ITEMS_FILE_DEFAULT);
-			items = load(fileName,
-					new Converter<String, Pair<Integer, MarketItem>>() {
-						public Pair<Integer, MarketItem> convert(String value) {
-							try {
-								MarketItem g = new MarketItem(value);
-								return new Pair<Integer, MarketItem>(g.getId(), g);
-							} catch (Exception e) {
-								e.printStackTrace();
-								return null;
-							}
+			items = loadMap(fileName,
+				new Converter<String, Pair<Integer, MarketItem>>() {
+					public Pair<Integer, MarketItem> convertTo(String value) {
+						try {
+							MarketItem g = new MarketItem(value);
+							return new Pair<Integer, MarketItem>(g.getId(), g);
+						} catch (Exception e) {
+							e.printStackTrace();
+							return null;
 						}
-					});
+					}
+				});
 		} catch (Exception e) {
-			saveGoods();
+			saveItems();
 		}
 	}
 
-	public void saveGoods() {
+	public void saveItems() {
 		try {
 			String fileName = getProperty(ITEMS_FILE_KEY, ITEMS_FILE_DEFAULT);
-			save(items, fileName, new Converter<Pair<Integer, MarketItem>, String>() {
-				public String convert(Pair<Integer, MarketItem> value) {
-					return value.second.toString();
-				}
-			});
+			saveMap(items, fileName,
+				new Converter<Pair<Integer, MarketItem>, String>() {
+					public String convertTo(Pair<Integer, MarketItem> value) {
+						return value.second.toString();
+					}
+				});
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

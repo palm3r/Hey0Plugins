@@ -10,14 +10,18 @@ public class VotEx extends PluginEx {
 	private ScheduledFuture<?> future;
 	private Map<String, Boolean> answers;
 	private int expires;
+	private Command vote, yes, no;
 
 	public VotEx() {
-		initPluginEx("VotEx", null, PluginListener.Priority.LOW,
-				PluginLoader.Hook.COMMAND);
+		super("VotEx");
 
 		scheduler = Executors.newSingleThreadScheduledExecutor();
+		answers = new TreeMap<String, Boolean>();
+		vote = new VoteCommand(this);
+		yes = new YesCommand(this);
+		no = new NoCommand(this);
 
-		addCommand(new VoteCommand(this));
+		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
 	}
 
 	public boolean isVoting() {
@@ -29,7 +33,11 @@ public class VotEx extends PluginEx {
 	}
 
 	public void beginVote(final String subject) {
-		answers = new TreeMap<String, Boolean>();
+		Chat.toBroadcast((Colors.LightBlue + "[VOTE] ") + (Colors.White + subject));
+		Chat.toBroadcast((Colors.LightGray + "Please vote ")
+			+ (Colors.LightGreen + YesCommand.COMMAND) + (Colors.LightGray + " or ")
+			+ (Colors.Rose + NoCommand.COMMAND));
+		answers.clear();
 		future = scheduler.schedule(new Runnable() {
 			public void run() {
 				int yes = 0;
@@ -37,10 +45,12 @@ public class VotEx extends PluginEx {
 					if (entry.getValue())
 						yes++;
 				}
-				Chat.toBroadcast(Colors.LightBlue + "[VOTE] " + Colors.White + subject);
-				Chat.toBroadcast("Yes %d No %d Abs %d", yes, answers.size() - yes, etc
-						.getServer().getPlayerList().size()
-						- answers.size());
+				int no = answers.size() - yes;
+				int abs = etc.getServer().getPlayerList().size() - (yes + no);
+				Chat.toBroadcast((Colors.LightBlue + "[VOTE] ")
+					+ (Colors.White + subject));
+				Chat.toBroadcast((Colors.LightGreen + "YES " + yes)
+					+ (Colors.Rose + " NO " + no) + (Colors.LightGray + " ABS " + abs));
 				future = null;
 			}
 		}, expires, TimeUnit.SECONDS);
@@ -48,6 +58,11 @@ public class VotEx extends PluginEx {
 
 	protected void onEnable() {
 		expires = Integer.valueOf(getProperty(EXPIRES_KEY, EXPIRES_DEFAULT));
+		addCommand(vote, yes, no);
+	}
+
+	protected void onDisable() {
+		removeCommand(vote, yes, no);
 	}
 
 }

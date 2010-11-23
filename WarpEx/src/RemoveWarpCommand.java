@@ -1,27 +1,35 @@
+import java.util.*;
+
 public class RemoveWarpCommand extends Command {
 
+	public static final String COMMAND = "/removewarp";
 	private WarpEx plugin;
 
-	public RemoveWarpCommand(WarpEx plugin) {
-		super(false, new String[] { "/removewarp", "/rw" }, "<namespace:>[warp]",
-				"Remove warp");
+	public RemoveWarpCommand(WarpEx plugin, String[] alias) {
+		super(COMMAND, alias, "<namespace:>[warp]", "Remove warp", COMMAND);
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String[] args) {
-		if (args.length < 2) {
-			Chat.toPlayer(player, getUsage(false));
+	public boolean call(Player player, String command, List<String> args) {
+		if (args.isEmpty()) {
+			Chat.toPlayer(player, getUsage(false, true));
 			return true;
 		}
-		Pair<String, String> p = plugin.normalizeKey(player, args[1]);
-		String key = p.first + ":" + p.second;
-		Location location = plugin.getWarp(player, key);
+		Pair<String, String> p = plugin.normalizeKey(player, args.get(0));
+		String key = null;
+		Location location = null;
+		if (p != null) {
+			key = p.first + ":" + p.second;
+			location = plugin.getWarp(player, key);
+		}
 		if (location == null) {
-			Chat.toPlayer(player, Colors.Rose + "Warp %s not found", key);
+			Chat.toPlayer(player, (Colors.Rose + "Warp ") + (Colors.LightGreen + key)
+				+ (Colors.Rose + " not found"));
 			return true;
 		}
 		plugin.removeWarp(player, key);
-		Chat.toPlayer(player, Colors.LightGreen + "Warp %s has been removed", key);
+		Chat.toPlayer(player, (Colors.LightGray + "Warp ")
+			+ (Colors.LightGreen + key) + (Colors.LightGray + " has been removed"));
 		return true;
 	}
 

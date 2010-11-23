@@ -1,34 +1,47 @@
+import java.util.*;
+
 public class PriceCommand extends Command {
 
 	private Market plugin;
 
-	public PriceCommand(Market market) {
-		super(false, new String[] { "/price" }, "<amount> <item>", "Show price");
-		this.plugin = market;
+	public PriceCommand(Market plugin) {
+		super("/price", null, "[item] <amount>", "Show price", "/market");
+		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String[] args) {
-		int amount = 1, index = 1;
-		try {
-			amount = Integer.valueOf(args[index]);
-			index++;
-		} catch (Exception e) {
-		}
-		String idName = args.length > index ? args[index] : String.valueOf(player
-				.getItemInHand());
-		MarketItem item = plugin.findItem(idName);
-		if (item == null) {
-			Chat.toPlayer(player, Colors.Rose + "Invalid item");
+	public boolean call(Player player, String command, List<String> args) {
+		if (args.isEmpty()) {
+			Chat.toPlayer(player, getUsage(false, true));
 			return true;
 		}
+		String idName = args.get(0);
+		MarketItem item = plugin.findItem(idName);
+		if (item == null) {
+			Chat.toPlayer(player, (Colors.LightGreen + idName)
+				+ (Colors.Rose + " is not found in market"));
+			return true;
+		}
+		if (!item.isEnabled()) {
+			Chat.toPlayer(player, (Colors.LightGreen + idName)
+				+ (Colors.Rose + " is prohibited"));
+			return true;
+		}
+		int amount = 1;
+		if (args.size() > 1) {
+			String amountString = args.get(1);
+			try {
+				amount = Integer.valueOf(amountString);
+			} catch (Exception e) {
+				Chat.toPlayer(player, (Colors.Rose + "Invalid parameter: ")
+					+ (Colors.LightBlue + amountString));
+				return true;
+			}
+		}
 		Chat.toPlayer(
-				player,
-				Colors.Gold + "%d %s : buy %d sell %d",
-				amount,
-				item.getName(),
-				item.getActualPrice(true, amount),
-				(int) Math.floor(item.getActualPrice(false, amount)
-						* plugin.getSalesPriceRate()));
+			player,
+			(Colors.LightGreen + item.getName()) + (Colors.LightGray + " (amount ")
+				+ (Colors.LightBlue + amount) + (Colors.LightGray + ") : ")
+				+ plugin.formatMoney(item.getActualPrice(true, amount)));
 		return true;
 	}
 

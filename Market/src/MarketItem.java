@@ -1,11 +1,12 @@
 public class MarketItem {
 
+	public static final double MINIMUM_PRICE = 1;
+
 	private int id;
 	private String name;
 	private boolean enabled;
 	private double price;
-	private double factor;
-	private int balance;
+	private double volatility;
 
 	public MarketItem(String str) {
 		String[] split = str.split(",");
@@ -13,13 +14,12 @@ public class MarketItem {
 		this.name = split[1];
 		this.enabled = Integer.valueOf(split[2]) != 0 ? true : false;
 		this.price = Double.valueOf(split[3]);
-		this.factor = Double.valueOf(split[4]);
-		this.balance = Integer.valueOf(split[5]);
+		this.volatility = Double.valueOf(split[4]);
 	}
 
 	public String toString() {
-		return String.format("%d,%s,%d,%f,%f,%d", id, name, enabled ? 1 : 0, price,
-				factor, balance);
+		return String.format("%d,%s,%d,%f,%f", id, name, enabled ? 1 : 0, price,
+			volatility);
 	}
 
 	public int getId() {
@@ -50,51 +50,37 @@ public class MarketItem {
 		this.price = price;
 	}
 
-	public int getBalance() {
-		return balance;
+	public double getVolatility() {
+		return volatility;
 	}
 
-	public void setBalance(int balance) {
-		this.balance = balance;
-	}
-
-	public double getFactor() {
-		return factor;
-	}
-
-	public void setFactor(double factor) {
-		this.factor = factor;
+	public void setVolatility(double volatility) {
+		this.volatility = volatility;
 	}
 
 	public int getActualPrice(boolean buy, int amount) {
-		double p = price, total = 0;
-		for (int i = 0; i < amount; ++i) {
-			total += (p < 1 ? 1 : p);
-			p += (p * (factor / (100.0 + (buy ? 0 : factor)))) * (buy ? 1 : -1);
-		}
-		return (int) Math.floor(total);
+		return (int) Math.round(amount
+			* (buy ? price : price / getFluctuatedPrice(amount)));
 	}
 
 	public boolean buy(int amount) {
 		if (!enabled)
 			return false;
-		balance += amount;
-		for (int i = 0; i < amount; ++i) {
-			price += price * (factor / 100.0);
-		}
+		price *= getFluctuatedPrice(amount);
 		return true;
 	}
 
 	public boolean sell(int amount) {
 		if (!enabled)
 			return false;
-		balance -= amount;
-		for (int i = 0; i < amount && price > 2; ++i) {
-			price -= price * (factor / (100.0 + factor));
-			if (price < 2)
-				price = 2;
-		}
+		price /= getFluctuatedPrice(amount);
+		if (price < MINIMUM_PRICE)
+			price = MINIMUM_PRICE;
 		return true;
+	}
+
+	private double getFluctuatedPrice(int amount) {
+		return 1 + (amount * volatility / 100.0);
 	}
 
 }
