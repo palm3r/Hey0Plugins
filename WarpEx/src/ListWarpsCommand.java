@@ -11,12 +11,16 @@ public class ListWarpsCommand extends Command {
 	}
 
 	public boolean call(Player player, String command, List<String> args) {
-		String defns = plugin.normalizeKey(player, "foo").first;
-		String ns = args.isEmpty() ? defns : args.get(0);
+		Pair<String, String> key = plugin.normalizeKey(player, "foo");
 		Set<String> set = new TreeSet<String>();
-		for (Pair<String, String> w : plugin.getAllWarps(player)) {
-			if (w.first.equalsIgnoreCase(ns))
-				set.add(w.second);
+		String defns = null, ns = null;
+		if (key != null) {
+			defns = plugin.normalizeKey(player, "foo").first;
+			ns = args.isEmpty() ? defns : args.get(0);
+			for (Pair<String, String> w : plugin.getAllWarps(player)) {
+				if (w.first.equalsIgnoreCase(ns))
+					set.add(w.second);
+			}
 		}
 		if (set.isEmpty()) {
 			Chat.toPlayer(player, (Colors.Rose + "No warps avairable"));

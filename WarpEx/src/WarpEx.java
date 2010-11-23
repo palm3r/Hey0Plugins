@@ -43,11 +43,13 @@ public class WarpEx extends PluginEx {
 		String[] s = key.split(":", 2);
 		String ns = s.length > 1 ? s[0] : defaultNamespace.get(player);
 		String warp = s.length > 1 ? s[1] : s[0];
-		if (warp.matches("[^ ,:]+")
+		if (!warp.matches("[^ ,:]+")
 			|| ((ns.equalsIgnoreCase(Namespace.Global.get(player)) || ns
 				.equalsIgnoreCase(Namespace.Secret.get(player))) && (warp
-				.startsWith(hiddenPrefix))))
+				.startsWith(hiddenPrefix)))) {
+			Chat.toPlayer(player, "normalizeKey: ns = %s, warp = %s", ns, warp);
 			return null;
+		}
 		return new Pair<String, String>(ns, warp);
 	}
 
