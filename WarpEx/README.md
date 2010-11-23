@@ -15,6 +15,11 @@ A plugin for Minecraft hMod that extends warp functions to support namespace.
 
 1. Add these commands to the group which you want to give privileges:
 
+		/warp             # can use /warp
+		/setwarp          # can create warp
+		/removewarp       # can remove warp (only warps in personal namespace)
+		/listwarps        # can see all warps (exclude hidden) in specified namespace
+		/listns           # can see all namespaces
 		/warpex-*         # can use /warp and /listwarps to global namespace
 		/warpex-!         # can use /warp and /listwarps to secret namespace
 		/warpex-modify-*  # also can use /setwarp and /removewarp to global namespace

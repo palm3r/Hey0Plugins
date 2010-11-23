@@ -6,6 +6,7 @@ A plugin for Minecraft hMod that provides invite commands with approval system.
 
 1. Copy InvitEx.jar to plugins directory
 1. Add InvitEx to plugins line in server.properties
+1. In groups.txt: add /invite to the group that can invite other players
 
 ## Configuration
 
