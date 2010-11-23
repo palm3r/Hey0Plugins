@@ -9,7 +9,7 @@ public class InvitEx extends PluginEx {
 	private ScheduledExecutorService scheduler;
 	private Map<String, Pair<String, ScheduledFuture<?>>> futures;
 	private int expires;
-	private Command invite;
+	private Command invite, accept;
 
 	public InvitEx() {
 		super("InvitEx");
@@ -17,6 +17,7 @@ public class InvitEx extends PluginEx {
 		scheduler = Executors.newSingleThreadScheduledExecutor();
 		futures = new TreeMap<String, Pair<String, ScheduledFuture<?>>>();
 		invite = new InviteCommand(this);
+		accept = new AcceptCommand(this);
 
 		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
 	}
@@ -41,11 +42,11 @@ public class InvitEx extends PluginEx {
 
 	protected void onEnable() {
 		expires = Integer.valueOf(getProperty(EXPIRES_KEY, EXPIRES_DEFAULT));
-		addCommand(invite);
+		addCommand(invite, accept);
 	}
 
 	protected void onDisable() {
-		removeCommand(invite);
+		removeCommand(invite, accept);
 	}
 
 }

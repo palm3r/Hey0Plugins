@@ -24,7 +24,7 @@ public class AcceptCommand extends Command {
 		} else {
 			Chat.toPlayer(host, (Colors.LightGreen + guestName)
 				+ (Colors.LightGray + " accepted your invite"));
-			player.teleportTo(player);
+			player.teleportTo(host);
 		}
 		plugin.removeInvite(guestName);
 		return true;
