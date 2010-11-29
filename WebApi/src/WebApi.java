@@ -17,8 +17,6 @@ public class WebApi extends PluginEx {
 
 	@SuppressWarnings("serial")
 	public WebApi() throws IOException {
-		super("WebApi");
-
 		this.handlers = new TreeMap<String, Pair<WebApiHandler, String>>() {
 			{
 				put(PLAYERS_COUNT_KEY, new Pair<WebApiHandler, String>(
@@ -45,9 +43,9 @@ public class WebApi extends PluginEx {
 				httpd.createContext(path).setHandler(new HttpHandler() {
 					public void handle(HttpExchange exchange) {
 						try {
-							Log.info("WebApi: [%s] %s %s", exchange.getRemoteAddress()
-								.toString(), exchange.getRequestMethod(), exchange
-								.getRequestURI().toString());
+							info("[%s] %s %s", exchange.getRemoteAddress().toString(),
+								exchange.getRequestMethod(), exchange.getRequestURI()
+									.toString());
 							String path = exchange.getRequestURI().getPath()
 								.substring(exchange.getHttpContext().getPath().length());
 							List<String> args = Tools.split(path, "/",
@@ -72,7 +70,7 @@ public class WebApi extends PluginEx {
 			int port = Integer.valueOf(getProperty(PORT_KEY, "25580"));
 			httpd.bind(new InetSocketAddress(port), 0);
 			httpd.start();
-			Log.info("web server started on port %d", port);
+			info("Web server started on port %d", port);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

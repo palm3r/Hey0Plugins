@@ -2,15 +2,16 @@ import java.util.*;
 
 public class ListWarpsCommand extends Command {
 
-	public static final String COMMAND = "/listwarps";
 	private WarpEx plugin;
 
-	public ListWarpsCommand(WarpEx plugin, String[] alias) {
-		super(COMMAND, alias, "<namespace>", "Show warps", COMMAND);
+	public ListWarpsCommand(WarpEx plugin, String... alias) {
+		super("<namespace>", "Show warps");
+		setAlias(alias);
+		setRequire("/listwarps");
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		Pair<String, String> key = plugin.normalizeKey(player, "foo");
 		Set<String> set = new TreeSet<String>();
 		String defns = null, ns = null;
@@ -42,8 +43,8 @@ public class ListWarpsCommand extends Command {
 				+ (Colors.LightGray + " warps: ")
 				+ (Colors.White + sb.toString().trim()));
 		Chat.toPlayer(player, (Colors.LightGray + "Type ")
-			+ (Colors.LightPurple + WarpCommand.COMMAND + (ns.equals(defns)
-				? " [name]" : " " + ns + ":[name]")) + (Colors.LightGray + " to use"));
+			+ (Colors.LightPurple + "/warp " + (ns.equals(defns) ? "[name]" : ns
+				+ ":[name]")) + (Colors.LightGray + " to use"));
 		return true;
 	}
 

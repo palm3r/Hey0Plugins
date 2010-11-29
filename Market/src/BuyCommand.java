@@ -1,14 +1,16 @@
 import java.util.*;
 
 public class BuyCommand extends Command {
+
 	private Market plugin;
 
 	public BuyCommand(Market plugin) {
-		super("/buy", null, "[item] <amount>", "Buy items", "/market");
+		super("[item] <amount>", "Buy items");
+		setRequire("/market");
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		if (args.isEmpty()) {
 			Chat.toPlayer(player, getUsage(false, true));
 			return true;
@@ -34,7 +36,7 @@ public class BuyCommand extends Command {
 				return true;
 			}
 		}
-		int payment = item.getActualPrice(true, amount);
+		int payment = item.getActualPrice(amount);
 		long money = plugin.getMoney(player.getName());
 		if (payment > money) {
 			Chat.toPlayer(player,
@@ -66,12 +68,12 @@ public class BuyCommand extends Command {
 		plugin.saveItems();
 		Chat.toPlayer(player, (Colors.LightGray + "You bought ")
 			+ (Colors.LightBlue + amount) + " "
-			+ (Colors.LightGreen + item.getName()) + (Colors.LightGray + " (paid ")
-			+ plugin.formatMoney(payment) + (Colors.LightGray + ")"));
-		Log
-			.info("Market: %s bought %d %s for %d (money %d -> %d)",
-				player.getName(), amount, item.getName(), payment, money, money
-					- payment);
+			+ (Colors.LightGreen + item.getName()) + (Colors.LightGray + " for ")
+			+ plugin.formatMoney(payment));
+		plugin.info("%s %s %d %s for %d", player.getName(), getCommand(), amount,
+			item.getName(), payment);
+		plugin.info("%s money %d %d (%+d)", player.getName(), money, money
+			- payment, -payment);
 		return true;
 	}
 }

@@ -5,12 +5,12 @@ public class Top5Command extends Command {
 	private Market plugin;
 
 	public Top5Command(Market plugin) {
-		super("/top5", null, null, "Show top5 ranking of richest players",
-			"/market");
+		super(null, "Show top5 ranking of richest players");
+		setRequire("/market");
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		List<Map.Entry<String, Long>> list = plugin.getRichestPlayers();
 		int i = 0;
 		for (Map.Entry<String, Long> entry : list) {

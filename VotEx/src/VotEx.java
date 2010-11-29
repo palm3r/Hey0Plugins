@@ -13,8 +13,6 @@ public class VotEx extends PluginEx {
 	private Command vote, yes, no;
 
 	public VotEx() {
-		super("VotEx");
-
 		scheduler = Executors.newSingleThreadScheduledExecutor();
 		answers = new TreeMap<String, Boolean>();
 		vote = new VoteCommand(this);
@@ -35,8 +33,8 @@ public class VotEx extends PluginEx {
 	public void beginVote(final String subject) {
 		Chat.toBroadcast((Colors.LightBlue + "[VOTE] ") + (Colors.White + subject));
 		Chat.toBroadcast((Colors.LightGray + "Please vote ")
-			+ (Colors.LightGreen + YesCommand.COMMAND) + (Colors.LightGray + " or ")
-			+ (Colors.Rose + NoCommand.COMMAND));
+			+ (Colors.LightGreen + yes.getCommand()) + (Colors.LightGray + " or ")
+			+ (Colors.Rose + no.getCommand()));
 		answers.clear();
 		future = scheduler.schedule(new Runnable() {
 			public void run() {

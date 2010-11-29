@@ -6,11 +6,12 @@ public class AcceptCommand extends Command {
 	private InvitEx plugin;
 
 	public AcceptCommand(InvitEx plugin) {
-		super("/accept", null, null, "Accept invite");
+		super(null, "Accept invite");
+		setRequire("/accept");
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		String guestName = player.getName();
 		Pair<String, ScheduledFuture<?>> invite = plugin.getInvite(guestName);
 		if (invite == null) {

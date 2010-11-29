@@ -34,9 +34,8 @@ public class WarpEx extends PluginEx {
 	private Command warp, setwarp, removewarp, listwarps, listns;
 
 	public WarpEx() {
-		super("WarpEx");
 		this.warps = new TreeMap<String, Location>();
-		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
+		// addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
 	}
 
 	public Pair<String, String> normalizeKey(Player player, String key) {
@@ -103,7 +102,8 @@ public class WarpEx extends PluginEx {
 				.canUseCommand("/warpex-modify-" + secret) || (!modify && player
 				.canUseCommand("/warpex-" + secret))))
 			|| (!warp.startsWith(hiddenPrefix) && !modify
-				&& !ns.equalsIgnoreCase(global) && !ns.equalsIgnoreCase(secret));
+				&& !ns.equalsIgnoreCase(global) && !ns.equalsIgnoreCase(secret))
+			|| player.isAdmin();
 	}
 
 	protected void onEnable() {

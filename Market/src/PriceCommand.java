@@ -5,11 +5,12 @@ public class PriceCommand extends Command {
 	private Market plugin;
 
 	public PriceCommand(Market plugin) {
-		super("/price", null, "[item] <amount>", "Show price", "/market");
+		super("[item] <amount>", "Show price");
+		setRequire("/market");
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		if (args.isEmpty()) {
 			Chat.toPlayer(player, getUsage(false, true));
 			return true;
@@ -41,7 +42,7 @@ public class PriceCommand extends Command {
 			player,
 			(Colors.LightGreen + item.getName()) + (Colors.LightGray + " (amount ")
 				+ (Colors.LightBlue + amount) + (Colors.LightGray + ") : ")
-				+ plugin.formatMoney(item.getActualPrice(true, amount)));
+				+ plugin.formatMoney(item.getActualPrice(amount)));
 		return true;
 	}
 

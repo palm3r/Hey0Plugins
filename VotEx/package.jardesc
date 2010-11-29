@@ -12,6 +12,10 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
         <file path="/VotEx/README.md"/>
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.spi"/>
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.helpers"/>
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.or"/>
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j"/>
         <javaElement handleIdentifier="=VotEx/src"/>
         <javaElement handleIdentifier="=Common/src"/>
     </selectedElements>

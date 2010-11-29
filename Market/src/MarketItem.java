@@ -1,11 +1,11 @@
 public class MarketItem {
 
-	public static final double MINIMUM_PRICE = 1;
+	private static final double minimumPrice = 1.0;
 
 	private int id;
 	private String name;
 	private boolean enabled;
-	private double price;
+	private double currentPrice, targetPrice;
 	private double volatility;
 
 	public MarketItem(String str) {
@@ -13,13 +13,14 @@ public class MarketItem {
 		this.id = Integer.valueOf(split[0]);
 		this.name = split[1];
 		this.enabled = Integer.valueOf(split[2]) != 0 ? true : false;
-		this.price = Double.valueOf(split[3]);
-		this.volatility = Double.valueOf(split[4]);
+		this.currentPrice = Double.valueOf(split[3]);
+		this.targetPrice = Double.valueOf(split[4]);
+		this.volatility = Double.valueOf(split[5]);
 	}
 
 	public String toString() {
-		return String.format("%d,%s,%d,%f,%f", id, name, enabled ? 1 : 0, price,
-			volatility);
+		return String.format("%d,%s,%d,%f,%f,%f", id, name, enabled ? 1 : 0,
+			currentPrice, targetPrice, volatility);
 	}
 
 	public int getId() {
@@ -42,12 +43,20 @@ public class MarketItem {
 		this.enabled = enabled;
 	}
 
-	public double getPrice() {
-		return price;
+	public double getCurrentPrice() {
+		return currentPrice;
 	}
 
-	public void setPrice(double price) {
-		this.price = price;
+	public void setCurrentPrice(double price) {
+		currentPrice = price;
+	}
+
+	public double getTargetPrice() {
+		return targetPrice;
+	}
+
+	public void setTargetPrice(double price) {
+		targetPrice = price;
 	}
 
 	public double getVolatility() {
@@ -58,29 +67,23 @@ public class MarketItem {
 		this.volatility = volatility;
 	}
 
-	public int getActualPrice(boolean buy, int amount) {
-		return (int) Math.round(amount
-			* (buy ? price : price / getFluctuatedPrice(amount)));
+	public static double getMinimumPrice() {
+		return minimumPrice;
 	}
 
-	public boolean buy(int amount) {
-		if (!enabled)
-			return false;
-		price *= getFluctuatedPrice(amount);
-		return true;
+	public int getActualPrice(int amount) {
+		return (int) Math.round(amount * currentPrice);
 	}
 
-	public boolean sell(int amount) {
-		if (!enabled)
-			return false;
-		price /= getFluctuatedPrice(amount);
-		if (price < MINIMUM_PRICE)
-			price = MINIMUM_PRICE;
-		return true;
+	public void buy(int amount) {
+		targetPrice *= 1.0 + (amount * volatility / 100.0);
 	}
 
-	private double getFluctuatedPrice(int amount) {
-		return 1 + (amount * volatility / 100.0);
+	public void sell(int amount) {
+		targetPrice /= 1.0 + (amount * volatility / 100.0);
+		if (targetPrice < minimumPrice) {
+			targetPrice = minimumPrice;
+		}
 	}
 
 }

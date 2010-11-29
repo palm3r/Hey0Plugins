@@ -1,110 +1,221 @@
 import java.io.*;
+import java.net.*;
 import java.util.*;
+import org.apache.log4j.*;
 
+/**
+ * Useful class for implement hMod plugins
+ * Example:
+ * 
+ * <pre>
+ * public class HelloWorldPlugin extends PluginEx {
+ * 	private Command helloWorld;
+ * 
+ * 	public HelloWorldPlugin() {
+ * 		super(&quot;HelloWorldPlugin&quot;);
+ * 		helloWorld = new HelloWorldCommand(this);
+ * 	}
+ * 
+ * 	protected void onEnable() {
+ * 		addCommand(helloWorld);
+ * 	}
+ * 
+ * 	protected void onDisable() {
+ * 		removeCommand(helloWorld);
+ * 	}
+ * }
+ * </pre>
+ * 
+ * @author palm3r
+ */
 public abstract class PluginEx extends Plugin {
 
-	public static final String INI_FILE = "plugin.ini";
+	private static final String PLUGIN_INI = "plugin.ini";
 
-	private Map<PluginLoader.Hook, HookInfo> listeners;
-	private String pluginName;
-	private List<Command> commands;
-	private Map<String, String> props;
+	private static final String LOG_LEVEL_KEY = "log-level";
+	private static final String LOG_LEVEL_DEFAULT = "info";
 
-	protected PluginEx(String name) {
-		this.pluginName = name;
-		this.listeners = new HashMap<PluginLoader.Hook, HookInfo>();
-		this.commands = new ArrayList<Command>();
-		this.props = new TreeMap<String, String>();
+	private static final String LOG_CONSOLE_KEY = "log-console";
+	private static final String LOG_CONSOLE_DEFAULT = "true";
+
+	private static final String LOG_FILE_KEY = "log-file";
+	private static final String LOG_FILE_DEFAULT = "false";
+
+	private static final String LOG_FILE_DIR_KEY = "log-file-dir";
+	private static final String LOG_FILE_DIR_DEFAULT = "%s/logs";
+
+	private static final String LOG_FILE_PATTERN = "%d{yyyy-MM-dd HH:mm:ss} [%p] %c: %m%n";
+
+	private Map<PluginLoader.Hook, HookInfo> hooks;
+	private Set<Command> commands;
+	private Map<String, String> config;
+
+	/**
+	 * Protected constructor
+	 * Derived class must call this constructor
+	 * 
+	 * @param name
+	 */
+	protected PluginEx() {
+		setName(this.getClass().getSimpleName());
+
+		this.hooks = new HashMap<PluginLoader.Hook, HookInfo>();
+		this.commands = new HashSet<Command>();
+		this.config = new TreeMap<String, String>();
+
+		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
 	}
 
+	//
+	// HOOKS
+	//
+
+	/**
+	 * Add hooks without listener
+	 * 
+	 * @param hook
+	 * @param priority
+	 */
 	public final void addHook(PluginLoader.Hook hook,
 		PluginListener.Priority priority) {
 		addHook(hook, priority, null);
 	}
 
+	/**
+	 * Add hooks with listener
+	 * 
+	 * @param hook
+	 * @param priority
+	 * @param listener
+	 */
 	public final void addHook(PluginLoader.Hook hook,
 		PluginListener.Priority priority, PluginListener listener) {
-		listeners.put(hook, new HookInfo(new Shifter(listener), priority));
+		hooks.put(hook, new HookInfo(new ListenerBridge(listener), priority));
+		debug("addHook(%s, %s, %s)", hook, priority, listener != null ? listener
+			: "(null)");
 	}
 
+	//
+	// COMMANDS
+	//
+
 	/**
+	 * Add Commands
 	 * 
-	 * @param command
+	 * @param commands
 	 */
 	public final void addCommand(Command... commands) {
 		for (Command c : commands) {
 			this.commands.add(c);
+			debug("addCommand(%s)", c);
+			if (isEnabled()) {
+				c.enable();
+			}
 		}
 	}
 
 	/**
-	 * Remove Command
+	 * Remove Commands
 	 * 
-	 * @param alias
-	 * @return
+	 * @param commands
 	 */
 	public final void removeCommand(Command... commands) {
 		for (Command c : commands) {
 			this.commands.remove(c);
 			c.disable();
+			debug("removeCommand(%s)", c);
 		}
 	}
 
+	//
+	// CONFIGURE AND DATA FILES
+	//
+
 	/**
-	 * Get property
+	 * Get config value
+	 * Throw exception when key was not found
 	 * 
 	 * @param key
 	 * @return
 	 */
 	public final String getProperty(String key) {
-		return props.get(key);
+		return config.get(key);
 	}
 
 	/**
-	 * Get property from plugin.ini
+	 * Get config value
+	 * Return default value when key was not found
 	 * 
 	 * @param key
-	 * @param defaultValue
+	 * @param value
 	 * @return
 	 */
-	public final String getProperty(String key, String defaultValue) {
-		String value = defaultValue;
-		if (props.containsKey(key)) {
-			value = props.get(key);
+	public final String getProperty(String key, String value) {
+		String v = value;
+		if (config.containsKey(key)) {
+			v = config.get(key);
 		} else {
-			setProperty(key, value);
+			setProperty(key, v);
 		}
-		return value;
+		return v;
 	}
 
 	/**
-	 * Set property
+	 * Set config value
 	 * 
 	 * @param key
 	 * @param value
 	 */
 	public final void setProperty(String key, String value) {
-		props.put(key, value);
-	}
-
-	public final <T> Set<T> loadSet(String fileName,
-		Converter<String, T> converter) throws IOException {
-		return Tools.loadSet(pluginName + File.separator + fileName, converter);
-	}
-
-	public final <T> Set<T> loadSet(String fileName,
-		Converter<String, T> converter, Set<T> set) throws IOException {
-		return Tools
-			.loadSet(pluginName + File.separator + fileName, converter, set);
-	}
-
-	public final <T> void saveSet(Set<T> data, String fileName,
-		Converter<T, String> converter) throws IOException {
-		Tools.saveSet(data, pluginName + File.separator + fileName, converter);
+		config.put(key, value);
+		debug("setProperty(%s, %s)", key, value);
 	}
 
 	/**
-	 * Load file from the directory only for the plugin.
+	 * Load file as Set<T>
+	 * 
+	 * @param <T>
+	 * @param fileName
+	 * @param converter
+	 * @return
+	 * @throws IOException
+	 */
+	public final <T> Set<T> loadSet(String fileName,
+		Converter<String, T> converter) throws IOException {
+		return Tools.loadSet(getName() + File.separator + fileName, converter);
+	}
+
+	/**
+	 * Load file as Set<T>
+	 * 
+	 * @param <T>
+	 * @param fileName
+	 * @param converter
+	 * @param set
+	 * @return
+	 * @throws IOException
+	 */
+	public final <T> Set<T> loadSet(String fileName,
+		Converter<String, T> converter, Set<T> set) throws IOException {
+		return Tools.loadSet(getName() + File.separator + fileName, converter, set);
+	}
+
+	/**
+	 * Save Set<T> elements to the file
+	 * 
+	 * @param <T>
+	 * @param data
+	 * @param fileName
+	 * @param converter
+	 * @throws IOException
+	 */
+	public final <T> void saveSet(Set<T> data, String fileName,
+		Converter<T, String> converter) throws IOException {
+		Tools.saveSet(data, getName() + File.separator + fileName, converter);
+	}
+
+	/**
+	 * Load file as Map<K, V>
 	 * 
 	 * @param <K>
 	 * @param <V>
@@ -115,17 +226,27 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <K, V> Map<K, V> loadMap(String fileName,
 		Converter<String, Pair<K, V>> converter) throws IOException {
-		return Tools.loadMap(pluginName + File.separator + fileName, converter);
-	}
-
-	public final <K, V> Map<K, V> loadMap(String fileName,
-		Converter<String, Pair<K, V>> converter, Map<K, V> map) throws IOException {
-		return Tools
-			.loadMap(pluginName + File.separator + fileName, converter, map);
+		return Tools.loadMap(getName() + File.separator + fileName, converter);
 	}
 
 	/**
-	 * Save file to the directory only for the plugin.
+	 * Load file as Map<K, V>
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 * @param fileName
+	 * @param converter
+	 * @param map
+	 * @return
+	 * @throws IOException
+	 */
+	public final <K, V> Map<K, V> loadMap(String fileName,
+		Converter<String, Pair<K, V>> converter, Map<K, V> map) throws IOException {
+		return Tools.loadMap(getName() + File.separator + fileName, converter, map);
+	}
+
+	/**
+	 * Save Map<K, V> to the file
 	 * 
 	 * @param <K>
 	 * @param <V>
@@ -136,61 +257,212 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <K, V> void saveMap(Map<K, V> data, String fileName,
 		Converter<Pair<K, V>, String> converter) throws IOException {
-		Tools.saveMap(data, pluginName + File.separator + fileName, converter);
+		Tools.saveMap(data, getName() + File.separator + fileName, converter);
+	}
+
+	//
+	// LOGGING
+	//
+
+	/**
+	 * Return logger
+	 */
+	public final Logger getLogger() {
+		return Logger.getLogger(getName());
 	}
 
 	/**
-	 * For override
+	 * Log fatal message
+	 * 
+	 * @param format
+	 * @param args
+	 */
+	public final void fatal(String format, Object... args) {
+		log(Level.FATAL, format, args);
+	}
+
+	/**
+	 * Log error message
+	 * 
+	 * @param format
+	 * @param args
+	 */
+	public final void error(String format, Object... args) {
+		log(Level.ERROR, format, args);
+	}
+
+	/**
+	 * Log warning message
+	 * 
+	 * @param format
+	 * @param args
+	 */
+	public final void warn(String format, Object... args) {
+		log(Level.WARN, format, args);
+	}
+
+	/**
+	 * Log info message
+	 * 
+	 * @param format
+	 * @param args
+	 */
+	public final void info(String format, Object... args) {
+		log(Level.INFO, format, args);
+	}
+
+	/**
+	 * Log debug message
+	 * 
+	 * @param format
+	 * @param args
+	 */
+	public final void debug(String format, Object... args) {
+		log(Level.DEBUG, format, args);
+	}
+
+	/**
+	 * Log trace message
+	 * 
+	 * @param format
+	 * @param args
+	 */
+	public final void trace(String format, Object... args) {
+		log(Level.TRACE, format, args);
+	}
+
+	/**
+	 * Log message with specified level
+	 * 
+	 * @param level
+	 * @param format
+	 * @param args
+	 */
+	public final void log(Level level, String format, Object... args) {
+		Logger logger = getLogger();
+		if (logger.isEnabledFor(level)) {
+			logger.log(level, String.format(format, args));
+		}
+	}
+
+	//
+	// FOR OVERRIDE
+	//
+
+	/**
+	 * Called when plugin enabled
 	 */
 	protected void onEnable() {
 	}
 
 	/**
-	 * For override
+	 * Called when plugin disabled
 	 */
 	protected void onDisable() {
 	}
 
+	//
+	// FOR PLUGIN API
+	//
+
+	/**
+	 * Enable plugin
+	 */
 	public final void enable() {
+		// Load plugin configuration
 		try {
-			props = loadMap(INI_FILE, new Converter<String, Pair<String, String>>() {
-				public Pair<String, String> convertTo(String value) {
-					String[] split = value.split("=", 2);
-					return new Pair<String, String>(split[0].trim(), split[1].trim());
-				}
-			});
+			config = loadMap(PLUGIN_INI,
+				new Converter<String, Pair<String, String>>() {
+					public Pair<String, String> convertTo(String line) {
+						String[] s = line.split("=", 2);
+						String key = s[0].trim();
+						String value = s[1].trim();
+						debug("plugin.ini: %s = %s", key, value);
+						return new Pair<String, String>(key, value);
+					}
+				});
 		} catch (IOException e) {
 		}
-		onEnable();
+		// Set minimum logging level
+		Logger logger = getLogger();
 		try {
-			saveMap(props, INI_FILE, new Converter<Pair<String, String>, String>() {
-				public String convertTo(Pair<String, String> value) {
-					return value.first + " = " + value.second;
+			logger.setLevel((Level) Level.class.getField(
+				getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(null));
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+		// Enable console logging
+		boolean enableConsoleLogging = Boolean.valueOf(getProperty(LOG_CONSOLE_KEY,
+			LOG_CONSOLE_DEFAULT));
+		if (enableConsoleLogging) {
+			logger.addAppender(new ConsoleAppender(
+				new PatternLayout(LOG_FILE_PATTERN), "System.out"));
+		}
+		// Enable file logging
+		boolean enableFileLogging = Boolean.valueOf(getProperty(LOG_FILE_KEY,
+			LOG_FILE_DEFAULT));
+		if (enableFileLogging) {
+			try {
+				String dirName = String.format(
+					getProperty(LOG_FILE_DIR_KEY, LOG_FILE_DIR_DEFAULT), getName());
+				File file = new File(dirName);
+				if (!file.exists()) {
+					file.mkdirs();
 				}
-			});
+				logger.addAppender(new DailyRollingFileAppender(new PatternLayout(
+					LOG_FILE_PATTERN), dirName + File.separator + getName() + ".log",
+					"yyyyMMdd"));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		// Call plugin enable handler
+		onEnable();
+		// Over write plugin.ini with default values
+		try {
+			saveMap(config, PLUGIN_INI,
+				new Converter<Pair<String, String>, String>() {
+					public String convertTo(Pair<String, String> value) {
+						return value.first + " = " + value.second;
+					}
+				});
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		// Enable commands
 		for (Command c : commands) {
 			c.enable();
+			debug("%s command enabled", c.getCommand());
 		}
-		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : listeners.entrySet()) {
+		// Enable hooks
+		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
 			entry.getValue().enable(entry.getKey(), this);
 		}
-		Log.info("%s enabled", pluginName);
+		info("enabled");
 	}
 
+	/**
+	 * Disable plugin
+	 */
 	public final void disable() {
-		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : listeners.entrySet()) {
+		// Disable hooks
+		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
 			entry.getValue().disable();
 		}
+		// Disable commands
 		for (Command c : commands) {
 			c.disable();
 		}
+		// Call plugin disable handler
 		onDisable();
-		Log.info("%s disabled", pluginName);
+		info("disabled");
 	}
 
+	/**
+	 * Hook info
+	 * 
+	 * @author palm3r
+	 */
 	private class HookInfo {
 		private PluginListener listener;
 		private PluginListener.Priority priority;
@@ -216,131 +488,169 @@ public abstract class PluginEx extends Plugin {
 		}
 	}
 
-	private final class Shifter extends PluginListener {
+	/**
+	 * Bridge for plugin listener
+	 * 
+	 * @author palm3r
+	 */
+	private final class ListenerBridge extends PluginListener {
 		private PluginListener listener;
 
-		public Shifter(PluginListener listener) {
+		public ListenerBridge(PluginListener listener) {
 			this.listener = listener;
 		}
 
 		public void onArmSwing(Player player) {
-			if (this.listener != null) {
-				this.listener.onArmSwing(player);
+			if (listener != null) {
+				listener.onArmSwing(player);
 			}
 		}
 
 		public void onBan(Player mod, Player player, String reason) {
-			if (this.listener != null) {
-				this.listener.onBan(mod, player, reason);
+			if (listener != null) {
+				listener.onBan(mod, player, reason);
 			}
 		}
 
 		public boolean onBlockBreak(Player player, Block block) {
-			return this.listener != null ? this.listener.onBlockBreak(player, block)
-				: false;
+			return listener != null ? listener.onBlockBreak(player, block) : false;
 		}
 
 		public boolean onBlockCreate(Player player, Block placed, Block clicked,
 			int item) {
-			return this.listener != null ? this.listener.onBlockCreate(player,
-				placed, clicked, item) : false;
+			return listener != null ? listener.onBlockCreate(player, placed, clicked,
+				item) : false;
 		}
 
 		public boolean onBlockDestroy(Player player, Block block) {
-			return this.listener != null ? this.listener
-				.onBlockDestroy(player, block) : false;
+			return listener != null ? listener.onBlockDestroy(player, block) : false;
 		}
 
 		public boolean onChat(Player player, String msg) {
-			return this.listener != null ? this.listener.onChat(player, msg) : false;
+			return listener != null ? listener.onChat(player, msg) : false;
 		}
 
 		public boolean onCommand(Player player, String[] args) {
 			String command = args[0];
+			debug("onCommand: %s", command);
 			List<String> args2 = new LinkedList<String>();
 			for (int i = 1; i < args.length; ++i) {
 				args2.add(args[i].trim());
 			}
 			for (Command c : commands) {
-				if (c.match(command) && c.canUseCommand(player))
-					return c.call(player, command, args2);
+				if (c.match(command) && c.canUseCommand(player)) {
+					debug("%s is corresponding to %s", command, c);
+					return c.execute(player, command, args2);
+				}
 			}
-			return this.listener != null ? this.listener.onCommand(player, args)
-				: false;
+			debug("%s is not corresponding to any command", command);
+			return listener != null ? listener.onCommand(player, args) : false;
 		}
 
 		public boolean onComplexBlockChange(Player player, ComplexBlock block) {
-			return this.listener != null ? this.listener.onComplexBlockChange(player,
-				block) : false;
-		}
-
-		public boolean onConsoleCommand(String[] args) {
-			return this.listener != null ? this.listener.onConsoleCommand(args)
+			return listener != null ? listener.onComplexBlockChange(player, block)
 				: false;
 		}
 
+		public boolean onConsoleCommand(String[] args) {
+			return listener != null ? listener.onConsoleCommand(args) : false;
+		}
+
 		public boolean onCraftInventoryChange(Player player) {
-			return this.listener != null ? this.listener
-				.onCraftInventoryChange(player) : false;
+			return listener != null ? listener.onCraftInventoryChange(player) : false;
 		}
 
 		public void onDisconnect(Player player) {
-			if (this.listener != null) {
-				this.listener.onDisconnect(player);
+			if (listener != null) {
+				listener.onDisconnect(player);
 			}
 		}
 
 		public boolean onEquipmentChange(Player player) {
-			return this.listener != null ? this.listener.onEquipmentChange(player)
-				: false;
+			return listener != null ? listener.onEquipmentChange(player) : false;
 		}
 
 		public boolean onInventoryChange(Player player) {
-			return this.listener != null ? this.listener.onInventoryChange(player)
-				: false;
+			return listener != null ? listener.onInventoryChange(player) : false;
 		}
 
 		public void onIpBan(Player mod, Player player, String reason) {
-			if (this.listener != null) {
-				this.listener.onIpBan(mod, player, reason);
+			if (listener != null) {
+				listener.onIpBan(mod, player, reason);
 			}
 		}
 
 		public boolean onItemDrop(Player player, Item item) {
-			return this.listener != null ? this.listener.onItemDrop(player, item)
-				: false;
+			return listener != null ? listener.onItemDrop(player, item) : false;
 		}
 
 		public void onKick(Player mod, Player player, String reason) {
-			if (this.listener != null) {
-				this.listener.onKick(mod, player, reason);
+			if (listener != null) {
+				listener.onKick(mod, player, reason);
 			}
 		}
 
 		public void onLogin(Player player) {
-			if (this.listener != null) {
-				this.listener.onLogin(player);
+			if (listener != null) {
+				listener.onLogin(player);
 			}
 		}
 
 		public String onLoginChecks(String user) {
-			return this.listener != null ? this.listener.onLoginChecks(user) : null;
+			return listener != null ? listener.onLoginChecks(user) : null;
 		}
 
 		public void onPlayerMove(Player player, Location from, Location to) {
-			if (this.listener != null) {
-				this.listener.onPlayerMove(player, from, to);
+			if (listener != null) {
+				listener.onPlayerMove(player, from, to);
 			}
 		}
 
 		public boolean onSendComplexBlock(Player player, ComplexBlock block) {
-			return this.listener != null ? this.listener.onSendComplexBlock(player,
-				block) : false;
+			return listener != null ? listener.onSendComplexBlock(player, block)
+				: false;
 		}
 
 		public boolean onTeleport(Player player, Location from, Location to) {
-			return this.listener != null ? this.listener.onTeleport(player, from, to)
-				: false;
+			return listener != null ? listener.onTeleport(player, from, to) : false;
+		}
+
+		// Below added by hMod b126 early build7
+
+		public boolean onBlockPhysics(Block block, boolean placed) {
+			return listener != null ? listener.onBlockPhysics(block, placed) : false;
+		}
+
+		public boolean onExplode(Block block) {
+			return listener != null ? listener.onExplode(block) : false;
+		}
+
+		public boolean onFlow(Block blockFrom, Block blockTo) {
+			return listener != null ? listener.onFlow(blockFrom, blockTo) : false;
+		}
+
+		public boolean onMobSpawn(Mob mob) {
+			return listener != null ? listener.onMobSpawn(mob) : false;
+		}
+
+		public int onRedstoneChange(Block block, int oldLevel, int newLevel) {
+			return listener != null ? listener.onRedstoneChange(block, oldLevel,
+				newLevel) : newLevel;
+		}
+
+		public boolean shouldIgnoreVerification(String name, InetAddress address) {
+			return listener != null ? listener
+				.shouldIgnoreVerification(name, address) : false;
+		}
+
+		public boolean onNameVerification(String name, String serverID,
+			InetAddress address) {
+			return listener != null ? listener.onNameVerification(name, serverID,
+				address) : false;
+		}
+
+		public String onNameResolution(String name, InetAddress address) {
+			return listener != null ? listener.onNameResolution(name, address) : null;
 		}
 	}
 

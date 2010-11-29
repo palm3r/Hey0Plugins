@@ -2,16 +2,16 @@ import java.util.*;
 
 public class SetWarpCommand extends Command {
 
-	public static final String COMMAND = "/setwarp";
 	private WarpEx plugin;
 
-	public SetWarpCommand(WarpEx plugin, String[] alias) {
-		super(COMMAND, alias, "<namespace:>[warp]", "Create or overwrite warp",
-			COMMAND);
+	public SetWarpCommand(WarpEx plugin, String... alias) {
+		super("<namespace:>[warp]", "Create or overwrite warp");
+		setRequire("/setwarp");
+		setAlias(alias);
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		if (args.isEmpty()) {
 			Chat.toPlayer(player, getUsage(false, true));
 			return true;

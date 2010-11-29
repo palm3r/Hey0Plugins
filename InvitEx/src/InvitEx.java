@@ -12,8 +12,6 @@ public class InvitEx extends PluginEx {
 	private Command invite, accept;
 
 	public InvitEx() {
-		super("InvitEx");
-
 		scheduler = Executors.newSingleThreadScheduledExecutor();
 		futures = new TreeMap<String, Pair<String, ScheduledFuture<?>>>();
 		invite = new InviteCommand(this);

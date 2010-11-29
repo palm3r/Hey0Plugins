@@ -2,14 +2,16 @@ import java.util.*;
 
 public class MoneyCommand extends Command {
 
+	public static final String REQUIRE = "/market";
 	private Market plugin;
 
 	public MoneyCommand(Market plugin) {
-		super("/money", null, null, "Show money", "/market");
+		super(null, "Show money");
+		setRequire(REQUIRE);
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		if (!args.isEmpty() && player.canUseCommand("/market-admin")) {
 			String playerName = args.get(0);
 			long money = plugin.getMoney(playerName);
@@ -19,8 +21,8 @@ public class MoneyCommand extends Command {
 					long old = money;
 					money = Long.valueOf(amountString);
 					plugin.setMoney(playerName, money);
-					Log.info("Market: %s set %s money %d to %d", player.getName(),
-						playerName, old, money);
+					plugin.info("%s money %d %d (%+d) [%s]", playerName, old, money,
+						(money - old), player.getName());
 				} catch (Exception e) {
 					Chat.toPlayer(player,
 						(Colors.Rose + "Invalid parameter:" + amountString));

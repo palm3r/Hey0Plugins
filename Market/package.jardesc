@@ -10,9 +10,13 @@
             <packagesToUnSeal/>
         </sealing>
     </manifest>
-    <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <javaElement handleIdentifier="=Common/src"/>
+    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.spi"/>
         <file path="/Market/README.md"/>
         <javaElement handleIdentifier="=Market/src"/>
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.or"/>
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.helpers"/>
+        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j"/>
+        <javaElement handleIdentifier="=Common/src"/>
     </selectedElements>
 </jardesc>

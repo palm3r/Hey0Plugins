@@ -2,15 +2,16 @@ import java.util.*;
 
 public class ListNsCommand extends Command {
 
-	public static final String COMMAND = "/listns";
 	private WarpEx plugin;
 
-	public ListNsCommand(WarpEx plugin, String[] alias) {
-		super(COMMAND, alias, null, "Show namespaces", COMMAND);
+	public ListNsCommand(WarpEx plugin, String... alias) {
+		super(null, "Show namespaces");
+		setRequire("/listns");
+		setAlias(alias);
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		Set<String> set = new HashSet<String>();
 		for (Pair<String, String> w : plugin.getAllWarps(player)) {
 			if (!w.first.equals(Namespace.Global.get(player))
@@ -30,7 +31,7 @@ public class ListNsCommand extends Command {
 		Chat.toPlayer(player, (Colors.LightGray + "Namespaces: ")
 			+ (Colors.White + sb.toString()));
 		Chat.toPlayer(player, (Colors.LightGray + "Type ")
-			+ (Colors.LightPurple + ListWarpsCommand.COMMAND + " [name]")
+			+ (Colors.LightPurple + "/listwarps [name]")
 			+ (Colors.LightGray + " to see warps"));
 		return true;
 	}

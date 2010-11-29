@@ -2,15 +2,15 @@ import java.util.*;
 
 public class NoCommand extends Command {
 
-	public static final String COMMAND = "/no";
 	private VotEx plugin;
 
 	public NoCommand(VotEx plugin) {
-		super(COMMAND, new String[] { "/n" }, null, "Vote NO");
+		super(null, "Vote NO");
+		setAlias("/n");
 		this.plugin = plugin;
 	}
 
-	public boolean call(Player player, String command, List<String> args) {
+	public boolean execute(Player player, String command, List<String> args) {
 		if (!plugin.isVoting()) {
 			Chat.toPlayer(player, (Colors.Rose + "No vote on progress"));
 			return true;
