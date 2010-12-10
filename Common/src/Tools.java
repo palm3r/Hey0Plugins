@@ -6,7 +6,7 @@ import java.util.*;
  * 
  * @author palm3r
  */
-public class Tools {
+public final class Tools {
 
 	/**
 	 * Capitalize string

@@ -23,18 +23,20 @@ public class InvitEx extends PluginEx {
 	public void addInvite(String hostName, String guestName, Runnable timeout) {
 		ScheduledFuture<?> future = scheduler.schedule(timeout, expires,
 			TimeUnit.SECONDS);
-		futures.put(guestName, new Pair<String, ScheduledFuture<?>>(hostName,
-			future));
+		futures.put(guestName.toLowerCase(), new Pair<String, ScheduledFuture<?>>(
+			hostName.toLowerCase(), future));
 	}
 
 	public Pair<String, ScheduledFuture<?>> getInvite(String guestName) {
-		return futures.containsKey(guestName) ? futures.get(guestName) : null;
+		String gn = guestName.toLowerCase();
+		return futures.containsKey(gn) ? futures.get(gn) : null;
 	}
 
 	public void removeInvite(String guestName) {
-		if (futures.containsKey(guestName)) {
-			futures.get(guestName).second.cancel(true);
-			futures.remove(guestName);
+		String gn = guestName.toLowerCase();
+		if (futures.containsKey(gn)) {
+			futures.get(gn).second.cancel(true);
+			futures.remove(gn);
 		}
 	}
 

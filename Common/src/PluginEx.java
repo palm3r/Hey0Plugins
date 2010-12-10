@@ -1,5 +1,4 @@
 import java.io.*;
-import java.net.*;
 import java.util.*;
 import org.apache.log4j.*;
 
@@ -90,9 +89,13 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void addHook(PluginLoader.Hook hook,
 		PluginListener.Priority priority, PluginListener listener) {
-		hooks.put(hook, new HookInfo(new ListenerBridge(listener), priority));
 		debug("addHook(%s, %s, %s)", hook, priority, listener != null ? listener
 			: "(null)");
+		HookInfo info = new HookInfo(new InternalListener(this, listener), priority);
+		hooks.put(hook, info);
+		if (isEnabled()) {
+			info.enable(hook, this);
+		}
 	}
 
 	//
@@ -106,8 +109,8 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void addCommand(Command... commands) {
 		for (Command c : commands) {
-			this.commands.add(c);
 			debug("addCommand(%s)", c);
+			this.commands.add(c);
 			if (isEnabled()) {
 				c.enable();
 			}
@@ -121,9 +124,9 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void removeCommand(Command... commands) {
 		for (Command c : commands) {
+			debug("removeCommand(%s)", c);
 			this.commands.remove(c);
 			c.disable();
-			debug("removeCommand(%s)", c);
 		}
 	}
 
@@ -139,7 +142,7 @@ public abstract class PluginEx extends Plugin {
 	 * @return
 	 */
 	public final String getProperty(String key) {
-		return config.get(key);
+		return config.get(key.toLowerCase());
 	}
 
 	/**
@@ -151,6 +154,7 @@ public abstract class PluginEx extends Plugin {
 	 * @return
 	 */
 	public final String getProperty(String key, String value) {
+		key = key.toLowerCase();
 		String v = value;
 		if (config.containsKey(key)) {
 			v = config.get(key);
@@ -167,8 +171,9 @@ public abstract class PluginEx extends Plugin {
 	 * @param value
 	 */
 	public final void setProperty(String key, String value) {
-		config.put(key, value);
+		key = key.toLowerCase();
 		debug("setProperty(%s, %s)", key, value);
+		config.put(key, value);
 	}
 
 	/**
@@ -182,6 +187,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <T> Set<T> loadSet(String fileName,
 		Converter<String, T> converter) throws IOException {
+		debug("loadSet(%s, %s)", fileName, converter);
 		return Tools.loadSet(getName() + File.separator + fileName, converter);
 	}
 
@@ -197,6 +203,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <T> Set<T> loadSet(String fileName,
 		Converter<String, T> converter, Set<T> set) throws IOException {
+		debug("loadSet(%s, %s)", fileName, converter, set);
 		return Tools.loadSet(getName() + File.separator + fileName, converter, set);
 	}
 
@@ -211,6 +218,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <T> void saveSet(Set<T> data, String fileName,
 		Converter<T, String> converter) throws IOException {
+		debug("saveSet(%s, %s, %s)", data, fileName, converter);
 		Tools.saveSet(data, getName() + File.separator + fileName, converter);
 	}
 
@@ -226,6 +234,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <K, V> Map<K, V> loadMap(String fileName,
 		Converter<String, Pair<K, V>> converter) throws IOException {
+		debug("loadMap(%s, %s)", fileName, converter);
 		return Tools.loadMap(getName() + File.separator + fileName, converter);
 	}
 
@@ -242,6 +251,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <K, V> Map<K, V> loadMap(String fileName,
 		Converter<String, Pair<K, V>> converter, Map<K, V> map) throws IOException {
+		debug("loadMap(%s, %s, %s)", fileName, converter, map);
 		return Tools.loadMap(getName() + File.separator + fileName, converter, map);
 	}
 
@@ -257,6 +267,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <K, V> void saveMap(Map<K, V> data, String fileName,
 		Converter<Pair<K, V>, String> converter) throws IOException {
+		debug("saveMap(%s, %s, %s)", data, fileName, converter);
 		Tools.saveMap(data, getName() + File.separator + fileName, converter);
 	}
 
@@ -369,13 +380,14 @@ public abstract class PluginEx extends Plugin {
 	 * Enable plugin
 	 */
 	public final void enable() {
+		debug("enable");
 		// Load plugin configuration
 		try {
 			config = loadMap(PLUGIN_INI,
 				new Converter<String, Pair<String, String>>() {
 					public Pair<String, String> convertTo(String line) {
 						String[] s = line.split("=", 2);
-						String key = s[0].trim();
+						String key = s[0].trim().toLowerCase();
 						String value = s[1].trim();
 						debug("plugin.ini: %s = %s", key, value);
 						return new Pair<String, String>(key, value);
@@ -436,7 +448,10 @@ public abstract class PluginEx extends Plugin {
 		}
 		// Enable hooks
 		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
-			entry.getValue().enable(entry.getKey(), this);
+			PluginLoader.Hook hook = entry.getKey();
+			HookInfo info = entry.getValue();
+			info.enable(hook, this);
+			debug("%s hook enabled", hook);
 		}
 		info("enabled");
 	}
@@ -445,213 +460,22 @@ public abstract class PluginEx extends Plugin {
 	 * Disable plugin
 	 */
 	public final void disable() {
+		debug("disable");
 		// Disable hooks
 		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
-			entry.getValue().disable();
+			PluginLoader.Hook hook = entry.getKey();
+			HookInfo info = entry.getValue();
+			info.disable();
+			debug("%s hook disabled", hook);
 		}
 		// Disable commands
 		for (Command c : commands) {
 			c.disable();
+			info("%s command disabled", c.getCommand());
 		}
 		// Call plugin disable handler
 		onDisable();
 		info("disabled");
-	}
-
-	/**
-	 * Hook info
-	 * 
-	 * @author palm3r
-	 */
-	private class HookInfo {
-		private PluginListener listener;
-		private PluginListener.Priority priority;
-		private PluginRegisteredListener registered;
-
-		public HookInfo(PluginListener listener, PluginListener.Priority priority) {
-			this.listener = listener;
-			this.priority = priority;
-		}
-
-		public void enable(PluginLoader.Hook hook, Plugin plugin) {
-			if (registered == null) {
-				registered = etc.getLoader().addListener(hook, listener, plugin,
-					priority);
-			}
-		}
-
-		public void disable() {
-			if (registered != null) {
-				etc.getLoader().removeListener(registered);
-				registered = null;
-			}
-		}
-	}
-
-	/**
-	 * Bridge for plugin listener
-	 * 
-	 * @author palm3r
-	 */
-	private final class ListenerBridge extends PluginListener {
-		private PluginListener listener;
-
-		public ListenerBridge(PluginListener listener) {
-			this.listener = listener;
-		}
-
-		public void onArmSwing(Player player) {
-			if (listener != null) {
-				listener.onArmSwing(player);
-			}
-		}
-
-		public void onBan(Player mod, Player player, String reason) {
-			if (listener != null) {
-				listener.onBan(mod, player, reason);
-			}
-		}
-
-		public boolean onBlockBreak(Player player, Block block) {
-			return listener != null ? listener.onBlockBreak(player, block) : false;
-		}
-
-		public boolean onBlockCreate(Player player, Block placed, Block clicked,
-			int item) {
-			return listener != null ? listener.onBlockCreate(player, placed, clicked,
-				item) : false;
-		}
-
-		public boolean onBlockDestroy(Player player, Block block) {
-			return listener != null ? listener.onBlockDestroy(player, block) : false;
-		}
-
-		public boolean onChat(Player player, String msg) {
-			return listener != null ? listener.onChat(player, msg) : false;
-		}
-
-		public boolean onCommand(Player player, String[] args) {
-			String command = args[0];
-			debug("onCommand: %s", command);
-			List<String> args2 = new LinkedList<String>();
-			for (int i = 1; i < args.length; ++i) {
-				args2.add(args[i].trim());
-			}
-			for (Command c : commands) {
-				if (c.match(command) && c.canUseCommand(player)) {
-					debug("%s is corresponding to %s", command, c);
-					return c.execute(player, command, args2);
-				}
-			}
-			debug("%s is not corresponding to any command", command);
-			return listener != null ? listener.onCommand(player, args) : false;
-		}
-
-		public boolean onComplexBlockChange(Player player, ComplexBlock block) {
-			return listener != null ? listener.onComplexBlockChange(player, block)
-				: false;
-		}
-
-		public boolean onConsoleCommand(String[] args) {
-			return listener != null ? listener.onConsoleCommand(args) : false;
-		}
-
-		public boolean onCraftInventoryChange(Player player) {
-			return listener != null ? listener.onCraftInventoryChange(player) : false;
-		}
-
-		public void onDisconnect(Player player) {
-			if (listener != null) {
-				listener.onDisconnect(player);
-			}
-		}
-
-		public boolean onEquipmentChange(Player player) {
-			return listener != null ? listener.onEquipmentChange(player) : false;
-		}
-
-		public boolean onInventoryChange(Player player) {
-			return listener != null ? listener.onInventoryChange(player) : false;
-		}
-
-		public void onIpBan(Player mod, Player player, String reason) {
-			if (listener != null) {
-				listener.onIpBan(mod, player, reason);
-			}
-		}
-
-		public boolean onItemDrop(Player player, Item item) {
-			return listener != null ? listener.onItemDrop(player, item) : false;
-		}
-
-		public void onKick(Player mod, Player player, String reason) {
-			if (listener != null) {
-				listener.onKick(mod, player, reason);
-			}
-		}
-
-		public void onLogin(Player player) {
-			if (listener != null) {
-				listener.onLogin(player);
-			}
-		}
-
-		public String onLoginChecks(String user) {
-			return listener != null ? listener.onLoginChecks(user) : null;
-		}
-
-		public void onPlayerMove(Player player, Location from, Location to) {
-			if (listener != null) {
-				listener.onPlayerMove(player, from, to);
-			}
-		}
-
-		public boolean onSendComplexBlock(Player player, ComplexBlock block) {
-			return listener != null ? listener.onSendComplexBlock(player, block)
-				: false;
-		}
-
-		public boolean onTeleport(Player player, Location from, Location to) {
-			return listener != null ? listener.onTeleport(player, from, to) : false;
-		}
-
-		// Below added by hMod b126 early build7
-
-		public boolean onBlockPhysics(Block block, boolean placed) {
-			return listener != null ? listener.onBlockPhysics(block, placed) : false;
-		}
-
-		public boolean onExplode(Block block) {
-			return listener != null ? listener.onExplode(block) : false;
-		}
-
-		public boolean onFlow(Block blockFrom, Block blockTo) {
-			return listener != null ? listener.onFlow(blockFrom, blockTo) : false;
-		}
-
-		public boolean onMobSpawn(Mob mob) {
-			return listener != null ? listener.onMobSpawn(mob) : false;
-		}
-
-		public int onRedstoneChange(Block block, int oldLevel, int newLevel) {
-			return listener != null ? listener.onRedstoneChange(block, oldLevel,
-				newLevel) : newLevel;
-		}
-
-		public boolean shouldIgnoreVerification(String name, InetAddress address) {
-			return listener != null ? listener
-				.shouldIgnoreVerification(name, address) : false;
-		}
-
-		public boolean onNameVerification(String name, String serverID,
-			InetAddress address) {
-			return listener != null ? listener.onNameVerification(name, serverID,
-				address) : false;
-		}
-
-		public String onNameResolution(String name, InetAddress address) {
-			return listener != null ? listener.onNameResolution(name, address) : null;
-		}
 	}
 
 }

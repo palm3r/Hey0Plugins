@@ -5,7 +5,7 @@ import java.util.*;
  * 
  * @author palm3r
  */
-public class Chat {
+public final class Chat {
 
 	/**
 	 * Broadcast message
