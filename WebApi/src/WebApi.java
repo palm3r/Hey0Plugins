@@ -28,8 +28,8 @@ public class WebApi extends PluginEx {
 			}
 		};
 
-		addHook(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.LOW);
-		addHook(PluginLoader.Hook.BLOCK_CREATED, PluginListener.Priority.LOW);
+		// addHook(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.MEDIUM);
+		// addHook(PluginLoader.Hook.BLOCK_CREATED, PluginListener.Priority.MEDIUM);
 	}
 
 	protected void onEnable() {
@@ -48,12 +48,8 @@ public class WebApi extends PluginEx {
 									.toString());
 							String path = exchange.getRequestURI().getPath()
 								.substring(exchange.getHttpContext().getPath().length());
-							List<String> args = Tools.split(path, "/",
-								new Converter<String, String>() {
-									public String convertTo(String value) {
-										return !value.isEmpty() ? value : null;
-									}
-								});
+							Collection<String> args = StringTools.split(
+								new ArrayList<String>(), path, "/");
 							PrintWriter pw = new PrintWriter(exchange.getResponseBody());
 							String[] a = args.size() > 0 ? (String[]) args
 								.toArray(new String[0]) : new String[] {};

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="MS932" standalone="no"?>
 <jardesc>
-    <jar path="WebApi/build/latest/WebApi.jar"/>
-    <options buildIfNeeded="true" compress="true" descriptionLocation="/WebApi/package.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <jar path="WatchDog/build/latest/WatchDog.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/WatchDog/package.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
     <manifest generateManifest="true" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
@@ -12,7 +12,6 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
         <javaElement handleIdentifier="=Common/src"/>
-        <javaElement handleIdentifier="=WebApi/src"/>
-        <file path="/WebApi/README.md"/>
+        <javaElement handleIdentifier="=WatchDog/src"/>
     </selectedElements>
 </jardesc>

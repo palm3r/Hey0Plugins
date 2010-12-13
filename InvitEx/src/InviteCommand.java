@@ -17,12 +17,19 @@ public class InviteCommand extends Command {
 			return true;
 		}
 		final String hostName = player.getName();
-		final String guestName = args.get(0);
+		String guestName = args.get(0);
 		if (guestName.equalsIgnoreCase(hostName)) {
 			Chat.toPlayer(player, (Colors.Rose + "You can\'t invite yourself"));
 			return true;
 		}
-		Player guest = etc.getServer().getPlayer(guestName);
+		Player guest = null;
+		for (Player p : etc.getServer().getPlayerList()) {
+			if (p.getName().equalsIgnoreCase(guestName)) {
+				guest = p;
+				guestName = p.getName();
+				break;
+			}
+		}
 		if (guest == null) {
 			Chat.toPlayer(player, (Colors.LightGreen + guestName)
 				+ (Colors.Rose + " is not online"));
@@ -40,15 +47,18 @@ public class InviteCommand extends Command {
 			+ (Colors.LightGray + " invited you. type ")
 			+ (Colors.LightPurple + "/accept")
 			+ (Colors.LightGray + " if you accept"));
+		final String gn = guestName;
 		plugin.addInvite(hostName, guestName, new Runnable() {
 			public void run() {
 				Chat.toPlayer(hostName,
 					(Colors.Rose + "Your invite was cancelled by timeout"));
-				Chat.toPlayer(guestName, (Colors.LightGreen + hostName)
+				Chat.toPlayer(gn, (Colors.LightGreen + hostName)
 					+ (Colors.Rose + "\'s invite was cancelled by timeout"));
-				plugin.removeInvite(guestName);
+				plugin.removeInvite(gn);
+				plugin.info("Invite from %s to %s has cancelled", hostName, gn);
 			}
 		});
+		plugin.info("Invite from %s to %s has started", hostName, guestName);
 		return true;
 	}
 

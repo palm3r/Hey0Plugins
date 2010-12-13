@@ -19,7 +19,7 @@ public class VotEx extends PluginEx {
 		yes = new YesCommand(this);
 		no = new NoCommand(this);
 
-		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
+		// addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.MEDIUM);
 	}
 
 	public boolean isVoting() {

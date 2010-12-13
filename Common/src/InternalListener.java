@@ -51,7 +51,7 @@ final class InternalListener extends PluginListener {
 		for (int i = 1; i < args.length; ++i) {
 			args2.add(args[i].trim());
 		}
-		for (Command c : plugin.commands) {
+		for (Command c : plugin.getCommands()) {
 			if (c.match(command) && c.canUseCommand(player)) {
 				plugin.debug("%s is corresponding to %s", command, c);
 				return c.execute(player, command, args2);
@@ -81,6 +81,13 @@ final class InternalListener extends PluginListener {
 		if (listener != null) {
 			listener.onKick(mod, player, reason);
 		}
+	}
+
+	@Deprecated
+	public boolean onBlockCreate(Player player, Block blockPlaced,
+		Block blockClicked, int itemInHand) {
+		return listener != null ? listener.onBlockCreate(player, blockPlaced,
+			blockClicked, itemInHand) : false;
 	}
 
 	public boolean onBlockDestroy(Player player, Block block) {
@@ -181,10 +188,10 @@ final class InternalListener extends PluginListener {
 		}
 	}
 
-	public void onVehicleCollision(BaseVehicle vehicle, BaseEntity collisioner) {
-		if (listener != null) {
-			listener.onVehicleCollision(vehicle, collisioner);
-		}
+	public Boolean
+		onVehicleCollision(BaseVehicle vehicle, BaseEntity collisioner) {
+		return listener != null ? listener.onVehicleCollision(vehicle, collisioner)
+			: Boolean.valueOf(false);
 	}
 
 	public void onVehicleDestroyed(BaseVehicle vehicle) {
@@ -229,4 +236,9 @@ final class InternalListener extends PluginListener {
 			liquidBlockId, targetBlock) : PluginLoader.HookResult.DEFAULT_ACTION;
 	}
 
+	public boolean onAttack(LivingEntity attacker, LivingEntity defender,
+		Integer amount) {
+		return listener != null ? listener.onAttack(attacker, defender, amount)
+			: false;
+	}
 }

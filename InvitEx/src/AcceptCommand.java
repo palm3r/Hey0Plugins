@@ -7,7 +7,6 @@ public class AcceptCommand extends Command {
 
 	public AcceptCommand(InvitEx plugin) {
 		super(null, "Accept invite");
-		setRequire("/accept");
 		this.plugin = plugin;
 	}
 
@@ -26,6 +25,8 @@ public class AcceptCommand extends Command {
 			Chat.toPlayer(host, (Colors.LightGreen + guestName)
 				+ (Colors.LightGray + " accepted your invite"));
 			player.teleportTo(host);
+			plugin.info("Invite from %s to %s has accepted", host.getName(),
+				guestName);
 		}
 		plugin.removeInvite(guestName);
 		return true;

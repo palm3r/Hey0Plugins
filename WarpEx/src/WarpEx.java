@@ -108,18 +108,18 @@ public class WarpEx extends PluginEx {
 
 	protected void onEnable() {
 		defaultNamespace = Enum.valueOf(Namespace.class,
-			Tools.Capitalize(getProperty(DEFAULT_NAMESPACE_KEY,
+			StringTools.Capitalize(getProperty(DEFAULT_NAMESPACE_KEY,
 				DEFAULT_NAMESPACE_DEFAULT)));
 		hiddenPrefix = getProperty(HIDDEN_PREFIX_KEY, HIDDEN_PREFIX_DEFAULT);
-		warpAlias = Tools.split(getProperty(WARP_ALIAS_KEY, WARP_ALIAS_DEFAULT),
-			",");
-		setwarpAlias = Tools.split(
+		warpAlias = StringTools.split(
+			getProperty(WARP_ALIAS_KEY, WARP_ALIAS_DEFAULT), ",");
+		setwarpAlias = StringTools.split(
 			getProperty(SETWARP_ALIAS_KEY, SETWARP_ALIAS_DEFAULT), ",");
-		removewarpAlias = Tools.split(
+		removewarpAlias = StringTools.split(
 			getProperty(REMOVEWARP_ALIAS_KEY, REMOVEWARP_ALIAS_DEFAULT), ",");
-		listwarpsAlias = Tools.split(
+		listwarpsAlias = StringTools.split(
 			getProperty(LISTWARPS_ALIAS_KEY, LISTWARPS_ALIAS_DEFAULT), ",");
-		listnsAlias = Tools.split(
+		listnsAlias = StringTools.split(
 			getProperty(LISTNS_ALIAS_KEY, LISTNS_ALIAS_DEFAULT), ",");
 
 		addCommand(warp = new WarpCommand(this, warpAlias),
@@ -138,7 +138,7 @@ public class WarpEx extends PluginEx {
 	private void loadWarps() {
 		try {
 			String fileName = getProperty(WARPS_FILE_KEY, WARPS_FILE_DEFAULT);
-			warps = loadMap(fileName,
+			warps = load(new HashMap<String, Location>(), fileName,
 				new Converter<String, Pair<String, Location>>() {
 					public Pair<String, Location> convertTo(String value) {
 						String[] s = value.split(",");
@@ -158,7 +158,7 @@ public class WarpEx extends PluginEx {
 	private void saveWarps() {
 		try {
 			String fileName = getProperty(WARPS_FILE_KEY, WARPS_FILE_DEFAULT);
-			saveMap(warps, fileName, new Converter<Pair<String, Location>, String>() {
+			save(warps, fileName, new Converter<Pair<String, Location>, String>() {
 				public String convertTo(Pair<String, Location> value) {
 					return String.format("%s,%f,%f,%f,%f,%f", value.first,
 						value.second.x, value.second.y, value.second.z, value.second.rotX,

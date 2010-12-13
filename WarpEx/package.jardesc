@@ -11,12 +11,8 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.spi"/>
-        <file path="/WarpEx/README.md"/>
-        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.or"/>
-        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j.helpers"/>
-        <javaElement handleIdentifier="=Common/log4j&lt;org.apache.log4j"/>
         <javaElement handleIdentifier="=Common/src"/>
+        <file path="/WarpEx/README.md"/>
         <javaElement handleIdentifier="=WarpEx/src"/>
     </selectedElements>
 </jardesc>

@@ -2,12 +2,12 @@
  * Generic converter class
  * 
  * @author palm3r
- * @param <T1>
+ * @param <T>
  *          source type
- * @param <T2>
+ * @param <U>
  *          destination type
  */
-public abstract class Converter<T1, T2> {
+public abstract class Converter<T, U> {
 
 	/**
 	 * Convert source to destination
@@ -15,7 +15,7 @@ public abstract class Converter<T1, T2> {
 	 * @param value
 	 * @return
 	 */
-	public T2 convertTo(T1 value) {
+	public U convertTo(T value) {
 		return null;
 	}
 
@@ -25,7 +25,7 @@ public abstract class Converter<T1, T2> {
 	 * @param value
 	 * @return
 	 */
-	public T1 convertFrom(T2 value) {
+	public T convertFrom(U value) {
 		return null;
 	}
 

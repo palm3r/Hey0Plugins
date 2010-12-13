@@ -82,7 +82,7 @@ public class DeathFix extends PluginEx {
 
 	protected void onEnable() {
 		try {
-			formats = loadMap(MESSAGES_INI,
+			formats = load(new HashMap<String, String>(), MESSAGES_INI,
 				new Converter<String, Pair<String, String>>() {
 					public Pair<String, String> convertTo(String line) {
 						try {
@@ -100,7 +100,7 @@ public class DeathFix extends PluginEx {
 		} catch (IOException e) {
 			try {
 				formats = new HashMap<String, String>(defaults);
-				saveMap(formats, MESSAGES_INI,
+				save(formats, MESSAGES_INI,
 					new Converter<Pair<String, String>, String>() {
 						public String convertTo(Pair<String, String> entry) {
 							String line = entry.first.toLowerCase() + " = " + entry.second;

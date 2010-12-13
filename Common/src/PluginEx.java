@@ -30,21 +30,15 @@ import org.apache.log4j.*;
 public abstract class PluginEx extends Plugin {
 
 	private static final String PLUGIN_INI = "plugin.ini";
+	private static final String LOG_PATTERN = "%d{yyyy-MM-dd HH:mm:ss} [%p] %c: %m%n";
+
+	private static final String LOG_ENABLE_KEY = "log-enable";
+	private static final String LOG_ENABLE_DEFAULT = "false";
 
 	private static final String LOG_LEVEL_KEY = "log-level";
 	private static final String LOG_LEVEL_DEFAULT = "info";
 
-	private static final String LOG_CONSOLE_KEY = "log-console";
-	private static final String LOG_CONSOLE_DEFAULT = "true";
-
-	private static final String LOG_FILE_KEY = "log-file";
-	private static final String LOG_FILE_DEFAULT = "false";
-
-	private static final String LOG_FILE_DIR_KEY = "log-file-dir";
-	private static final String LOG_FILE_DIR_DEFAULT = "%s/logs";
-
-	private static final String LOG_FILE_PATTERN = "%d{yyyy-MM-dd HH:mm:ss} [%p] %c: %m%n";
-
+	private Logger logger;
 	private Map<PluginLoader.Hook, HookInfo> hooks;
 	private Set<Command> commands;
 	private Map<String, String> config;
@@ -58,11 +52,15 @@ public abstract class PluginEx extends Plugin {
 	protected PluginEx() {
 		setName(this.getClass().getSimpleName());
 
+		this.logger = Logger.getLogger(getName());
+		this.logger.addAppender(new ConsoleAppender(new PatternLayout(LOG_PATTERN),
+			"System.out"));
+
 		this.hooks = new HashMap<PluginLoader.Hook, HookInfo>();
 		this.commands = new HashSet<Command>();
 		this.config = new TreeMap<String, String>();
 
-		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
+		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.MEDIUM);
 	}
 
 	//
@@ -70,7 +68,7 @@ public abstract class PluginEx extends Plugin {
 	//
 
 	/**
-	 * Add hooks without listener
+	 * Add hook without listener
 	 * 
 	 * @param hook
 	 * @param priority
@@ -81,7 +79,7 @@ public abstract class PluginEx extends Plugin {
 	}
 
 	/**
-	 * Add hooks with listener
+	 * Add hook with listener
 	 * 
 	 * @param hook
 	 * @param priority
@@ -89,12 +87,24 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void addHook(PluginLoader.Hook hook,
 		PluginListener.Priority priority, PluginListener listener) {
-		debug("addHook(%s, %s, %s)", hook, priority, listener != null ? listener
-			: "(null)");
 		HookInfo info = new HookInfo(new InternalListener(this, listener), priority);
 		hooks.put(hook, info);
 		if (isEnabled()) {
 			info.enable(hook, this);
+		}
+	}
+
+	/**
+	 * remove hook
+	 * 
+	 * @param hook
+	 */
+	public final void removeHook(PluginLoader.Hook hook) {
+		if (hooks.containsKey(hook)) {
+			HookInfo info = hooks.remove(hook);
+			if (isEnabled()) {
+				info.disable();
+			}
 		}
 	}
 
@@ -103,13 +113,19 @@ public abstract class PluginEx extends Plugin {
 	//
 
 	/**
+	 * Return command set
+	 */
+	public final Set<Command> getCommands() {
+		return commands;
+	}
+
+	/**
 	 * Add Commands
 	 * 
 	 * @param commands
 	 */
 	public final void addCommand(Command... commands) {
 		for (Command c : commands) {
-			debug("addCommand(%s)", c);
 			this.commands.add(c);
 			if (isEnabled()) {
 				c.enable();
@@ -124,7 +140,6 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void removeCommand(Command... commands) {
 		for (Command c : commands) {
-			debug("removeCommand(%s)", c);
 			this.commands.remove(c);
 			c.disable();
 		}
@@ -172,7 +187,6 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void setProperty(String key, String value) {
 		key = key.toLowerCase();
-		debug("setProperty(%s, %s)", key, value);
 		config.put(key, value);
 	}
 
@@ -185,26 +199,10 @@ public abstract class PluginEx extends Plugin {
 	 * @return
 	 * @throws IOException
 	 */
-	public final <T> Set<T> loadSet(String fileName,
-		Converter<String, T> converter) throws IOException {
-		debug("loadSet(%s, %s)", fileName, converter);
-		return Tools.loadSet(getName() + File.separator + fileName, converter);
-	}
-
-	/**
-	 * Load file as Set<T>
-	 * 
-	 * @param <T>
-	 * @param fileName
-	 * @param converter
-	 * @param set
-	 * @return
-	 * @throws IOException
-	 */
-	public final <T> Set<T> loadSet(String fileName,
-		Converter<String, T> converter, Set<T> set) throws IOException {
-		debug("loadSet(%s, %s)", fileName, converter, set);
-		return Tools.loadSet(getName() + File.separator + fileName, converter, set);
+	public final <T> Collection<T> load(Collection<T> collection,
+		String fileName, Converter<String, T> converter) throws IOException {
+		return CollectionTools.load(collection, getName() + File.separator
+			+ fileName, converter);
 	}
 
 	/**
@@ -216,10 +214,10 @@ public abstract class PluginEx extends Plugin {
 	 * @param converter
 	 * @throws IOException
 	 */
-	public final <T> void saveSet(Set<T> data, String fileName,
+	public final <T> void save(Collection<T> collection, String fileName,
 		Converter<T, String> converter) throws IOException {
-		debug("saveSet(%s, %s, %s)", data, fileName, converter);
-		Tools.saveSet(data, getName() + File.separator + fileName, converter);
+		CollectionTools.save(collection, getName() + File.separator + fileName,
+			converter);
 	}
 
 	/**
@@ -232,27 +230,9 @@ public abstract class PluginEx extends Plugin {
 	 * @return
 	 * @throws IOException
 	 */
-	public final <K, V> Map<K, V> loadMap(String fileName,
+	public final <K, V> Map<K, V> load(Map<K, V> map, String fileName,
 		Converter<String, Pair<K, V>> converter) throws IOException {
-		debug("loadMap(%s, %s)", fileName, converter);
-		return Tools.loadMap(getName() + File.separator + fileName, converter);
-	}
-
-	/**
-	 * Load file as Map<K, V>
-	 * 
-	 * @param <K>
-	 * @param <V>
-	 * @param fileName
-	 * @param converter
-	 * @param map
-	 * @return
-	 * @throws IOException
-	 */
-	public final <K, V> Map<K, V> loadMap(String fileName,
-		Converter<String, Pair<K, V>> converter, Map<K, V> map) throws IOException {
-		debug("loadMap(%s, %s, %s)", fileName, converter, map);
-		return Tools.loadMap(getName() + File.separator + fileName, converter, map);
+		return MapTools.load(map, getName() + File.separator + fileName, converter);
 	}
 
 	/**
@@ -260,26 +240,22 @@ public abstract class PluginEx extends Plugin {
 	 * 
 	 * @param <K>
 	 * @param <V>
-	 * @param data
+	 * @param map
 	 * @param fileName
 	 * @param converter
 	 * @throws IOException
 	 */
-	public final <K, V> void saveMap(Map<K, V> data, String fileName,
+	public final <K, V> void save(Map<K, V> map, String fileName,
 		Converter<Pair<K, V>, String> converter) throws IOException {
-		debug("saveMap(%s, %s, %s)", data, fileName, converter);
-		Tools.saveMap(data, getName() + File.separator + fileName, converter);
+		MapTools.save(map, getName() + File.separator + fileName, converter);
 	}
 
 	//
 	// LOGGING
 	//
 
-	/**
-	 * Return logger
-	 */
-	public final Logger getLogger() {
-		return Logger.getLogger(getName());
+	public Logger getLogger() {
+		return logger;
 	}
 
 	/**
@@ -350,7 +326,6 @@ public abstract class PluginEx extends Plugin {
 	 * @param args
 	 */
 	public final void log(Level level, String format, Object... args) {
-		Logger logger = getLogger();
 		if (logger.isEnabledFor(level)) {
 			logger.log(level, String.format(format, args));
 		}
@@ -380,50 +355,33 @@ public abstract class PluginEx extends Plugin {
 	 * Enable plugin
 	 */
 	public final void enable() {
-		debug("enable");
 		// Load plugin configuration
 		try {
-			config = loadMap(PLUGIN_INI,
+			config = load(new HashMap<String, String>(), PLUGIN_INI,
 				new Converter<String, Pair<String, String>>() {
 					public Pair<String, String> convertTo(String line) {
-						String[] s = line.split("=", 2);
+						String[] s = StringTools.split(line, "=", 2);
 						String key = s[0].trim().toLowerCase();
 						String value = s[1].trim();
-						debug("plugin.ini: %s = %s", key, value);
 						return new Pair<String, String>(key, value);
 					}
 				});
 		} catch (IOException e) {
 		}
-		// Set minimum logging level
-		Logger logger = getLogger();
+		// configure plugin independent logger
 		try {
-			logger.setLevel((Level) Level.class.getField(
-				getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(null));
-		} catch (Exception e1) {
-			e1.printStackTrace();
+			Level level = (Level) Level.class.getField(
+				getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(null);
+			logger.setLevel(level);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		// Enable console logging
-		boolean enableConsoleLogging = Boolean.valueOf(getProperty(LOG_CONSOLE_KEY,
-			LOG_CONSOLE_DEFAULT));
-		if (enableConsoleLogging) {
-			logger.addAppender(new ConsoleAppender(
-				new PatternLayout(LOG_FILE_PATTERN), "System.out"));
-		}
-		// Enable file logging
-		boolean enableFileLogging = Boolean.valueOf(getProperty(LOG_FILE_KEY,
-			LOG_FILE_DEFAULT));
-		if (enableFileLogging) {
+		boolean enabled = Boolean.valueOf(getProperty(LOG_ENABLE_KEY,
+			LOG_ENABLE_DEFAULT));
+		if (enabled) {
 			try {
-				String dirName = String.format(
-					getProperty(LOG_FILE_DIR_KEY, LOG_FILE_DIR_DEFAULT), getName());
-				File file = new File(dirName);
-				if (!file.exists()) {
-					file.mkdirs();
-				}
 				logger.addAppender(new DailyRollingFileAppender(new PatternLayout(
-					LOG_FILE_PATTERN), dirName + File.separator + getName() + ".log",
-					"yyyyMMdd"));
+					LOG_PATTERN), "logs/" + getName() + ".log", "yyyyMMdd"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -432,26 +390,23 @@ public abstract class PluginEx extends Plugin {
 		onEnable();
 		// Over write plugin.ini with default values
 		try {
-			saveMap(config, PLUGIN_INI,
-				new Converter<Pair<String, String>, String>() {
-					public String convertTo(Pair<String, String> value) {
-						return value.first + " = " + value.second;
-					}
-				});
+			save(config, PLUGIN_INI, new Converter<Pair<String, String>, String>() {
+				public String convertTo(Pair<String, String> value) {
+					return value.first + " = " + value.second;
+				}
+			});
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		// Enable commands
 		for (Command c : commands) {
 			c.enable();
-			debug("%s command enabled", c.getCommand());
 		}
 		// Enable hooks
 		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
 			PluginLoader.Hook hook = entry.getKey();
 			HookInfo info = entry.getValue();
 			info.enable(hook, this);
-			debug("%s hook enabled", hook);
 		}
 		info("enabled");
 	}
@@ -460,18 +415,13 @@ public abstract class PluginEx extends Plugin {
 	 * Disable plugin
 	 */
 	public final void disable() {
-		debug("disable");
 		// Disable hooks
 		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
-			PluginLoader.Hook hook = entry.getKey();
-			HookInfo info = entry.getValue();
-			info.disable();
-			debug("%s hook disabled", hook);
+			entry.getValue().disable();
 		}
 		// Disable commands
 		for (Command c : commands) {
 			c.disable();
-			info("%s command disabled", c.getCommand());
 		}
 		// Call plugin disable handler
 		onDisable();

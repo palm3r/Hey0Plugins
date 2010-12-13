@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project default="create_run_jar" name="Create Runnable Jar for Project WebApi">
+<project default="create_run_jar" name="Create Runnable Jar for Project WatchDog">
     <!--this file was created by Eclipse Runnable JAR Export Wizard-->
     <!--ANT 1.7 is required                                        -->
     <target name="create_run_jar">
-        <jar destfile="C:/Users/palm3r/Repos/Hey0Plugins/WebApi/build/latest/WebApi.jar" filesetmanifest="mergewithoutmain">
+        <jar destfile="C:/Users/palm3r/Repos/Hey0Plugins/WatchDog/build/latest/WatchDog.jar" filesetmanifest="mergewithoutmain">
             <manifest>
                 <attribute name="Main-Class" value=""/>
                 <attribute name="Class-Path" value="."/>
             </manifest>
-            <fileset dir="C:/Users/palm3r/Repos/Hey0Plugins/WebApi/bin"/>
+            <fileset dir="C:/Users/palm3r/Repos/Hey0Plugins/WatchDog/bin"/>
             <fileset dir="C:/Users/palm3r/Repos/Hey0Plugins/Common/bin"/>
             <zipfileset excludes="META-INF/*.SF" src="C:/Users/palm3r/Repos/Hey0Plugins/Common/libs/Minecraft_Mod.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="C:/Users/palm3r/Repos/Hey0Plugins/Common/libs/log4j-1.2.16.jar"/>

@@ -47,8 +47,8 @@ public class Market extends PluginEx {
 		money = new MoneyCommand(this);
 		top5 = new Top5Command(this);
 
-		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
-		addHook(PluginLoader.Hook.LOGIN, PluginListener.Priority.LOW);
+		// addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.MEDIUM);
+		addHook(PluginLoader.Hook.LOGIN, PluginListener.Priority.MEDIUM);
 	}
 
 	/**

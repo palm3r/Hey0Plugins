@@ -1,39 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project name="WarpEx" basedir="." default="all">
-
-	<property name="common.dir" value="../Common" />
-	<property name="jar.dir" value="build/latest" />
-	<property name="jar.file" value="${jar.dir}/${ant.project.name}.jar" />
-
-	<path id="classpath">
-		<fileset dir="${common.dir}/lib" />
-	</path>
-
-	<target name="compile">
-		<mkdir dir="${basedir}/bin" />
-		<ant dir="${common.dir}" target="compile" />
-		<copy todir="${basedir}/bin">
-			<fileset dir="${common.dir}/bin" />
-		</copy>
-		<javac srcdir="${basedir}/src" destdir="${basedir}/bin" classpathref="classpath" />
-	</target>
-
-	<target name="package" depends="compile">
-		<mkdir dir="${jar.dir}" />
-		<property name="target" value="${jar.file}" />
-		<jar destfile="${target}">
-			<fileset dir="${common.dir}/bin" />
-			<fileset dir="${common.dir}/src" />
-			<fileset dir="${basedir}/bin" />
-			<fileset dir="${basedir}/src" />
-		</jar>
-	</target>
-
-	<target name="clean">
-		<ant dir="${common.dir}" target="clean" />
-		<delete dir="${basedir}/bin" />
-	</target>
-
-	<target name="all" depends="package,clean" />
-
+<project default="create_run_jar" name="Create Runnable Jar for Project WarpEx">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="C:/Users/palm3r/Repos/Hey0Plugins/WarpEx/build/latest/WarpEx.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value=""/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="C:/Users/palm3r/Repos/Hey0Plugins/WarpEx/bin"/>
+            <fileset dir="C:/Users/palm3r/Repos/Hey0Plugins/Common/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="C:/Users/palm3r/Repos/Hey0Plugins/Common/libs/Minecraft_Mod.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="C:/Users/palm3r/Repos/Hey0Plugins/Common/libs/log4j-1.2.16.jar"/>
+        </jar>
+    </target>
 </project>
