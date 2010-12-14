@@ -2,38 +2,20 @@ import java.util.*;
 
 public class Handler {
 
-	private static String lastPlayer = null;
-	private static Integer lastItemId = null;
-	private static Event lastEvent = null;
-	private static Location lastLocation = null;
-	private static List<Location> history = new LinkedList<Location>();
+	public static WatchDog PLUGIN = null;
 
-	public static Location getLocation(int id) {
-		return history.size() >= id ? history.get(id - 1) : null;
-	}
-
-	private PluginEx plugin;
-	private Set<String> allow;
 	private Set<String> deny;
 	private Set<String> notify;
-	private boolean log = false;
-	private boolean kick = false;
-	private boolean ban = false;
+	private boolean doLog = false;
+	private boolean doKick = false;
+	private boolean doBan = false;
 
-	public Handler(PluginEx plugin) {
-		this.plugin = plugin;
-		this.allow = new HashSet<String>();
+	public Handler() {
 		this.deny = new HashSet<String>();
 		this.notify = new HashSet<String>();
 	}
 
 	public void set(String property, String value) {
-		if (property.equalsIgnoreCase("allow")) {
-			allow = new HashSet<String>();
-			for (String group : StringTools.split(value, ",")) {
-				allow.add(group.toLowerCase());
-			}
-		}
 		if (property.equalsIgnoreCase("deny")) {
 			deny = new HashSet<String>();
 			for (String group : StringTools.split(value, ",")) {
@@ -48,24 +30,22 @@ public class Handler {
 		}
 
 		if (property.equalsIgnoreCase("log")) {
-			log = Boolean.valueOf(value.toLowerCase());
+			doLog = Boolean.valueOf(value.toLowerCase());
 		}
 
 		if (property.equalsIgnoreCase("kick")) {
-			kick = Boolean.valueOf(value.toLowerCase());
+			doKick = Boolean.valueOf(value.toLowerCase());
 		}
 
 		if (property.equalsIgnoreCase("ban")) {
-			ban = Boolean.valueOf(value.toLowerCase());
+			doBan = Boolean.valueOf(value.toLowerCase());
 		}
-
-		// plugin.debug("%s = %s => %s", property, value, this.toString());
 	}
 
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		if (!allow.isEmpty()) {
-			sb.append(String.format("allow=%s", CollectionTools.join(allow, ",")));
+		if (!deny.isEmpty()) {
+			sb.append(String.format("deny=%s", CollectionTools.join(deny, ",")));
 		}
 		if (!notify.isEmpty()) {
 			if (sb.length() > 0) {
@@ -74,13 +54,13 @@ public class Handler {
 			sb.append(String.format("notify=%s", CollectionTools.join(notify, ",")));
 		}
 		List<String> actions = new ArrayList<String>();
-		if (log) {
+		if (doLog) {
 			actions.add("log");
 		}
-		if (kick) {
+		if (doKick) {
 			actions.add("kick");
 		}
-		if (ban) {
+		if (doBan) {
 			actions.add("ban");
 		}
 		if (!actions.isEmpty()) {
@@ -92,93 +72,89 @@ public class Handler {
 		return sb.toString();
 	}
 
-	public boolean execute(Event event, Player player, Block block,
-		Location location) {
-		return execute(event, player, block.getType(), location);
+	public boolean execute(Event event, Player player, Block block) {
+		return execute(
+			event,
+			player,
+			ItemNames.getName(block.getType()),
+			new Location((int) player.getX(), (int) player.getY(), (int) player
+				.getZ()));
 	}
 
-	public boolean execute(Event event, Player player, Item item,
-		Location location) {
-		return execute(event, player, item.getItemId(), location);
+	public boolean execute(Event event, Player player, Item item) {
+		return execute(
+			event,
+			player,
+			ItemNames.getName(item.getItemId()),
+			new Location((int) player.getX(), (int) player.getY(), (int) player
+				.getZ()));
 	}
 
-	public boolean execute(Event event, Player player, BaseVehicle vehicle,
-		Location location) {
-		return execute(event, player, vehicle.getId(), location);
+	public boolean execute(Event event, Player player, BaseVehicle vehicle) {
+		return execute(
+			event,
+			player,
+			ItemNames.getName(vehicle.getId()),
+			new Location((int) player.getX(), (int) player.getY(), (int) player
+				.getZ()));
 	}
 
-	public boolean execute(Event event, Player player, int itemId,
+	public boolean execute(Event event, Player player) {
+		return execute(event, player, null, new Location((int) player.getX(),
+			(int) player.getY(), (int) player.getZ()));
+	}
+
+	public boolean execute(Event event, Player player1, Player player2) {
+		return execute(event, player1, player2.getName(), new Location(
+			(int) player1.getX(), (int) player1.getY(), (int) player1.getZ()));
+	}
+
+	public boolean execute(Event event, Player player, String target,
 		Location location) {
-		boolean allowed = true;
-		if (deny.contains("*")) {
-			allowed = false;
-		}
-		for (String group : player.getGroups()) {
-			allowed = !deny.contains(group.toLowerCase())
-				|| allow.contains(group.toLowerCase());
+		boolean allowed = !deny.contains("*");
+		String[] groups = player.getGroups();
+		for (int i = 0; i < groups.length && allowed; ++i) {
+			if (deny.contains(groups[i].toLowerCase())) {
+				allowed = false;
+			}
 		}
 		if (!allowed) {
 			Chat.toPlayer(player, Colors.Rose + "action denied");
 		}
-
-		if ((lastPlayer == null || !lastPlayer.equalsIgnoreCase(player.getName()))
-			|| (lastItemId == null || lastItemId != itemId)
-			|| (lastEvent == null || lastEvent != event)
-			|| (lastLocation == null || (lastLocation.x != location.x
-				|| lastLocation.y != location.y || lastLocation.z != location.z))) {
-			history.add(location);
-
-			String itemName = ItemNames.getName(itemId);
-			String msg1 = String.format("[%d] %s ", history.size(), player.getName());
-			String msg2 = String.format("%s %s", event.toString().toLowerCase(),
-				itemName);
-			String msg3 = String.format(" (%d, %d, %d)", (int) player.getX(),
-				(int) player.getY(), (int) player.getZ());
-			String msg4 = allowed ? "" : " DENIED";
-
-			// kick
-			if (kick) {
-				player.kick(String.format("Automatic kick (reason: %s)", msg2));
-				Chat.toBroadcast(Colors.Rose + "%s was kicked (reason: %s)",
-					player.getName(), msg2);
-				msg4 += " KICKED";
+		Log log = new Log(event, player, target, location);
+		if (Log.size() == 0 || !Log.last().equals(log)) {
+			if (!allowed) {
+				log.deny();
 			}
-
-			// ban
-			if (ban) {
-				etc.getServer().ban(player.getName());
-				player.kick(String.format("Automatic ban (reason: %s)", msg2));
-				Chat.toBroadcast(Colors.Rose + "%s was banned (reason: %s)",
-					player.getName(), msg2);
-				msg4 += " BANNED";
+			if (doKick) {
+				log.kick();
 			}
-
-			String msg = msg1 + msg2 + msg3 + msg4;
-
-			// log
-			if (log) {
-				plugin.info(msg);
+			if (doBan) {
+				log.ban();
 			}
-
-			// notify
-			if (notify.contains("*")) {
-				Chat.toBroadcast(Colors.Rose + msg);
-			} else {
-				for (Player p : etc.getServer().getPlayerList()) {
-					for (String g : p.getGroups()) {
-						if (notify.contains(g.toLowerCase())) {
-							Chat.toPlayer(p, Colors.Rose + msg);
+			String msg = log.getLogMessage(true, true);
+			if (doLog) {
+				log.add();
+				PLUGIN.info(msg);
+			}
+			if (!notify.isEmpty()) {
+				String color = log.isAllowed() ? Colors.Gold : Colors.Rose;
+				if (notify.contains("*")) {
+					Chat.toBroadcast((Colors.White + String.format("[%d] ", log.getId()))
+						+ (color + msg));
+				} else {
+					for (Player p : etc.getServer().getPlayerList()) {
+						for (String g : p.getGroups()) {
+							if (notify.contains(g.toLowerCase())) {
+								Chat.toPlayer(p,
+									(Colors.White + String.format("[%d] ", log.getId()))
+										+ (color + msg));
+							}
 						}
 					}
 				}
 			}
-
-			lastPlayer = player.getName();
-			lastItemId = itemId;
-			lastEvent = event;
-			lastLocation = location;
 		}
 		return allowed;
 	}
-
 }

@@ -30,7 +30,8 @@ import org.apache.log4j.*;
 public abstract class PluginEx extends Plugin {
 
 	private static final String PLUGIN_INI = "plugin.ini";
-	private static final String LOG_PATTERN = "%d{yyyy-MM-dd HH:mm:ss} [%p] %c: %m%n";
+	private static final String LOG_PATTERN =
+		"%d{yyyy-MM-dd HH:mm:ss} [%p] %c: %m%n";
 
 	private static final String LOG_ENABLE_KEY = "log-enable";
 	private static final String LOG_ENABLE_DEFAULT = "false";
@@ -87,7 +88,8 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void addHook(PluginLoader.Hook hook,
 		PluginListener.Priority priority, PluginListener listener) {
-		HookInfo info = new HookInfo(new InternalListener(this, listener), priority);
+		HookInfo info =
+			new HookInfo(new InternalListener(this, listener), priority);
 		hooks.put(hook, info);
 		if (isEnabled()) {
 			info.enable(hook, this);
@@ -357,31 +359,34 @@ public abstract class PluginEx extends Plugin {
 	public final void enable() {
 		// Load plugin configuration
 		try {
-			config = load(new HashMap<String, String>(), PLUGIN_INI,
-				new Converter<String, Pair<String, String>>() {
-					public Pair<String, String> convertTo(String line) {
-						String[] s = StringTools.split(line, "=", 2);
-						String key = s[0].trim().toLowerCase();
-						String value = s[1].trim();
-						return new Pair<String, String>(key, value);
-					}
-				});
+			config =
+				load(new HashMap<String, String>(), PLUGIN_INI,
+					new Converter<String, Pair<String, String>>() {
+						public Pair<String, String> convertTo(String line) {
+							String[] s = StringTools.split(line, "=", 2);
+							String key = s[0].trim().toLowerCase();
+							String value = s[1].trim();
+							return new Pair<String, String>(key, value);
+						}
+					});
 		} catch (IOException e) {
 		}
 		// configure plugin independent logger
 		try {
-			Level level = (Level) Level.class.getField(
-				getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(null);
+			Level level =
+				(Level) Level.class.getField(
+					getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase())
+					.get(null);
 			logger.setLevel(level);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		boolean enabled = Boolean.valueOf(getProperty(LOG_ENABLE_KEY,
-			LOG_ENABLE_DEFAULT));
+		boolean enabled =
+			Boolean.valueOf(getProperty(LOG_ENABLE_KEY, LOG_ENABLE_DEFAULT));
 		if (enabled) {
 			try {
 				logger.addAppender(new DailyRollingFileAppender(new PatternLayout(
-					LOG_PATTERN), "logs/" + getName() + ".log", "yyyyMMdd"));
+					LOG_PATTERN), "logs/" + getName() + ".log", ".yyyy-MM-dd"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
