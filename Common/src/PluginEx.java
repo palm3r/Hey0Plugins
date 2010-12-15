@@ -1,6 +1,9 @@
 import java.io.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import org.apache.log4j.*;
+import org.h2.jdbcx.JdbcDataSource;
 
 /**
  * Useful class for implement hMod plugins
@@ -192,6 +195,15 @@ public abstract class PluginEx extends Plugin {
 		config.put(key, value);
 	}
 
+	public final String getRelativePath(String fileName) {
+		return getName() + File.separator + fileName;
+	}
+
+	public final String getAbsolutePath(String fileName) {
+		return new File(".").getAbsoluteFile().getParent() + File.separator
+			+ getRelativePath(fileName);
+	}
+
 	/**
 	 * Load file as Set<T>
 	 * 
@@ -203,8 +215,8 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <T> Collection<T> load(Collection<T> collection,
 		String fileName, Converter<String, T> converter) throws IOException {
-		return CollectionTools.load(collection, getName() + File.separator
-			+ fileName, converter);
+		return CollectionTools.load(collection, getRelativePath(fileName),
+			converter);
 	}
 
 	/**
@@ -218,8 +230,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <T> void save(Collection<T> collection, String fileName,
 		Converter<T, String> converter) throws IOException {
-		CollectionTools.save(collection, getName() + File.separator + fileName,
-			converter);
+		CollectionTools.save(collection, getRelativePath(fileName), converter);
 	}
 
 	/**
@@ -234,7 +245,7 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <K, V> Map<K, V> load(Map<K, V> map, String fileName,
 		Converter<String, Pair<K, V>> converter) throws IOException {
-		return MapTools.load(map, getName() + File.separator + fileName, converter);
+		return MapTools.load(map, getRelativePath(fileName), converter);
 	}
 
 	/**
@@ -249,7 +260,24 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final <K, V> void save(Map<K, V> map, String fileName,
 		Converter<Pair<K, V>, String> converter) throws IOException {
-		MapTools.save(map, getName() + File.separator + fileName, converter);
+		MapTools.save(map, getRelativePath(fileName), converter);
+	}
+
+	//
+	// DB
+	//
+
+	public final Connection openDatabase(String fileName, String username,
+		String password) throws ClassNotFoundException, SQLException {
+		Class.forName("org.h2.Driver");
+		String url =
+			String.format("jdbc:h2:file:%s",
+				getAbsolutePath(fileName).replace('\\', '/'));
+		JdbcDataSource ds = new JdbcDataSource();
+		ds.setURL(url);
+		ds.setUser(username);
+		ds.setPassword(password);
+		return ds.getConnection();
 	}
 
 	//
