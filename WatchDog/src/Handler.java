@@ -1,160 +1,169 @@
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.*;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
 
 public class Handler {
 
-	public static WatchDog PLUGIN = null;
-
-	private Set<String> deny;
-	private Set<String> notify;
-	private boolean doLog = false;
-	private boolean doKick = false;
-	private boolean doBan = false;
+	private Map<String, Set<String>> props = new HashMap<String, Set<String>>();
 
 	public Handler() {
-		this.deny = new HashSet<String>();
-		this.notify = new HashSet<String>();
 	}
 
-	public void set(String property, String value) {
-		if (property.equalsIgnoreCase("deny")) {
-			deny = new HashSet<String>();
-			for (String group : StringTools.split(value, ",")) {
-				deny.add(group.toLowerCase());
-			}
+	public void set(String key, String value) {
+		Set<String> list =
+			props.containsKey(key) ? props.get(key) : new HashSet<String>();
+		list.clear();
+		for (String group : StringTools.split(value, ",")) {
+			list.add(group.toLowerCase());
 		}
-		if (property.equalsIgnoreCase("notify")) {
-			notify = new HashSet<String>();
-			for (String group : StringTools.split(value, ",")) {
-				notify.add(group.toLowerCase());
-			}
-		}
-
-		if (property.equalsIgnoreCase("log")) {
-			doLog = Boolean.valueOf(value.toLowerCase());
-		}
-
-		if (property.equalsIgnoreCase("kick")) {
-			doKick = Boolean.valueOf(value.toLowerCase());
-		}
-
-		if (property.equalsIgnoreCase("ban")) {
-			doBan = Boolean.valueOf(value.toLowerCase());
-		}
+		props.put(key, list);
 	}
 
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		if (!deny.isEmpty()) {
-			sb.append(String.format("deny=%s", CollectionTools.join(deny, ",")));
-		}
-		if (!notify.isEmpty()) {
-			if (sb.length() > 0) {
-				sb.append(", ");
-			}
-			sb.append(String.format("notify=%s", CollectionTools.join(notify, ",")));
-		}
-		List<String> actions = new ArrayList<String>();
-		if (doLog) {
-			actions.add("log");
-		}
-		if (doKick) {
-			actions.add("kick");
-		}
-		if (doBan) {
-			actions.add("ban");
-		}
-		if (!actions.isEmpty()) {
-			if (sb.length() > 0) {
-				sb.append(", ");
-			}
-			sb.append(String.format("actions=%s", CollectionTools.join(actions, ",")));
-		}
-		return sb.toString();
+		return new ToStringBuilder(this).append("props", props).toString();
 	}
 
-	public boolean execute(Event event, Player player, Block block) {
+	public boolean execute(String event, Player player, Block block) {
 		return execute(
 			event,
 			player,
 			ItemNames.getName(block.getType()),
-			new Location((int) player.getX(), (int) player.getY(), (int) player
-				.getZ()));
+			new Location((int) player.getX(), (int) player.getY(),
+				(int) player.getZ()));
 	}
 
-	public boolean execute(Event event, Player player, Item item) {
+	public boolean execute(String event, Player player, Item item) {
 		return execute(
 			event,
 			player,
 			ItemNames.getName(item.getItemId()),
-			new Location((int) player.getX(), (int) player.getY(), (int) player
-				.getZ()));
+			new Location((int) player.getX(), (int) player.getY(),
+				(int) player.getZ()));
 	}
 
-	public boolean execute(Event event, Player player, BaseVehicle vehicle) {
+	public boolean execute(String event, Player player, BaseVehicle vehicle) {
 		return execute(
 			event,
 			player,
 			ItemNames.getName(vehicle.getId()),
-			new Location((int) player.getX(), (int) player.getY(), (int) player
-				.getZ()));
+			new Location((int) player.getX(), (int) player.getY(),
+				(int) player.getZ()));
 	}
 
-	public boolean execute(Event event, Player player) {
+	public boolean execute(String event, Player player) {
 		return execute(event, player, null, new Location((int) player.getX(),
 			(int) player.getY(), (int) player.getZ()));
 	}
 
-	public boolean execute(Event event, Player player1, Player player2) {
+	public boolean execute(String event, Player player1, Player player2) {
 		return execute(event, player1, player2.getName(), new Location(
 			(int) player1.getX(), (int) player1.getY(), (int) player1.getZ()));
 	}
 
-	public boolean execute(Event event, Player player, String target,
+	private String _event = null;
+	private String _name = null;
+	private String _target = null;
+	private Integer _x = null;
+	private Integer _y = null;
+	private Integer _z = null;
+
+	public boolean execute(String event, Player player, String target,
 		Location location) {
-		boolean allowed = !deny.contains("*");
-		String[] groups = player.getGroups();
-		for (int i = 0; i < groups.length && allowed; ++i) {
-			if (deny.contains(groups[i].toLowerCase())) {
-				allowed = false;
+		int id = 0;
+		String name = player.getName();
+		int x = (int) location.x;
+		int y = (int) location.y;
+		int z = (int) location.z;
+
+		boolean denied = test("deny", player);
+		boolean kicked = test("kick", player);
+		boolean banned = test("ban", player);
+
+		if (denied) {
+			Chat.toPlayer(
+				player,
+				Colors.Rose
+					+ String.format("%s%s denied", event.toString().toLowerCase(),
+						target != null ? " " + target : ""));
+		}
+		if (kicked) {
+			Actions.kick(event, name, target);
+		}
+		if (banned) {
+			Actions.ban(event, name, target);
+		}
+
+		if ((_event == null || !_event.equalsIgnoreCase(event))
+			|| (_name == null || !_name.equalsIgnoreCase(name))
+			|| (_target == null || !_target.equalsIgnoreCase(target))
+			|| (_x == null || !_x.equals(x)) || (_y == null || !_y.equals(y))
+			|| (_z == null || !_z.equals(z))) {
+
+			_event = event;
+			_name = name;
+			_target = target;
+			_x = x;
+			_y = y;
+			_z = z;
+
+			boolean logged = test("log", player);
+			if (logged) {
+				try {
+					PreparedStatement stmt =
+						WatchDog.CONN.prepareStatement(
+							String.format(
+								"INSERT INTO %s (time,player,event,target,x,y,z,denied,kicked,banned) VALUES (?,?,?,?,?,?,?,?,?,?);",
+								WatchDog.TABLE), PreparedStatement.RETURN_GENERATED_KEYS);
+					stmt.setLong(1, new Date().getTime());
+					stmt.setString(2, name);
+					stmt.setString(3, event);
+					stmt.setString(4, target);
+					stmt.setInt(5, x);
+					stmt.setInt(6, y);
+					stmt.setInt(7, z);
+					stmt.setBoolean(8, denied);
+					stmt.setBoolean(9, kicked);
+					stmt.setBoolean(10, banned);
+					stmt.executeUpdate();
+					ResultSet rs = stmt.getGeneratedKeys();
+					if (rs.next()) {
+						id = rs.getInt(1);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+			String msg =
+				String.format("[%1$d]%2$s %3$s", id,
+					denied ? Colors.Rose : Colors.Gold, WatchDog.getMessage(name, event,
+						target, x, y, z, denied, kicked, banned));
+			for (Player p : etc.getServer().getPlayerList()) {
+				if (test("notify", p)) {
+					Chat.toPlayer(p, msg);
+				}
 			}
 		}
-		if (!allowed) {
-			Chat.toPlayer(player, Colors.Rose + "action denied");
-		}
-		Log log = new Log(event, player, target, location);
-		if (Log.size() == 0 || !Log.last().equals(log)) {
-			if (!allowed) {
-				log.deny();
-			}
-			if (doKick) {
-				log.kick();
-			}
-			if (doBan) {
-				log.ban();
-			}
-			String msg = log.getLogMessage(true, true);
-			if (doLog) {
-				log.add();
-				PLUGIN.info(msg);
-			}
-			if (!notify.isEmpty()) {
-				String color = log.isAllowed() ? Colors.Gold : Colors.Rose;
-				if (notify.contains("*")) {
-					Chat.toBroadcast((Colors.White + String.format("[%d] ", log.getId()))
-						+ (color + msg));
-				} else {
-					for (Player p : etc.getServer().getPlayerList()) {
-						for (String g : p.getGroups()) {
-							if (notify.contains(g.toLowerCase())) {
-								Chat.toPlayer(p,
-									(Colors.White + String.format("[%d] ", log.getId()))
-										+ (color + msg));
-							}
-						}
+		return denied;
+	}
+
+	private boolean test(String key, Player player) {
+		if (props.containsKey(key)) {
+			Set<String> groups = props.get(key);
+			if (groups.contains("*")) {
+				return true;
+			} else {
+				List<String> playerGroups = Arrays.asList(player.getGroups());
+				for (String g : groups) {
+					if (playerGroups.contains(g)) {
+						return true;
 					}
 				}
 			}
 		}
-		return allowed;
+		return false;
 	}
+
 }

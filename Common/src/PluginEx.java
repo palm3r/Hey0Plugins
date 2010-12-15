@@ -363,7 +363,7 @@ public abstract class PluginEx extends Plugin {
 				load(new HashMap<String, String>(), PLUGIN_INI,
 					new Converter<String, Pair<String, String>>() {
 						public Pair<String, String> convertTo(String line) {
-							String[] s = StringTools.split(line, "=", 2);
+							String[] s = line.split("=", 2);
 							String key = s[0].trim().toLowerCase();
 							String value = s[1].trim();
 							return new Pair<String, String>(key, value);
@@ -375,8 +375,7 @@ public abstract class PluginEx extends Plugin {
 		try {
 			Level level =
 				(Level) Level.class.getField(
-					getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase())
-					.get(null);
+					getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(null);
 			logger.setLevel(level);
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -1,11 +1,30 @@
 import java.io.*;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.*;
 import java.util.regex.*;
 
+import org.h2.jdbcx.JdbcDataSource;
+
 public class WatchDog extends PluginEx {
+
+	public static final String TABLE = "log";
+	public static Connection CONN = null;
 
 	private static final String BLOCKS_INI = "blocks.ini";
 	private static final String PLAYERS_INI = "players.ini";
+
+	private static final String DATABASE_KEY = "database";
+	private static final String DATABASE_DEFAULT = "WatchDog/log";
+
+	private static final String USERNAME_KEY = "username";
+	private static final String USERNAME_DEFAULT = "username";
+
+	private static final String PASSWORD_KEY = "password";
+	private static final String PASSWORD_DEFAULT = "password";
+
+	private static final String PAGESIZE_KEY = "pagesize";
+	private static final String PAGESIZE_DEFAULT = "10";
 
 	@SuppressWarnings("serial")
 	private Set<PluginLoader.Hook> hooks = new HashSet<PluginLoader.Hook>() {
@@ -29,54 +48,45 @@ public class WatchDog extends PluginEx {
 
 	private PluginListener listener = new PluginListener() {
 
-		public boolean onBlockBreak(Player player, Block block) {
-			Handler handler = getBlockHandler(block.getType(), Event.DESTROY);
-			return handler != null ? !handler.execute(Event.DESTROY, player,
-				block) : false;
-		}
-
 		public boolean onBlockDestroy(Player player, Block block) {
 			Handler handler = getBlockHandler(block.getType(), Event.DESTROY);
-			return handler != null ? !handler.execute(Event.DESTROY, player,
-				block) : false;
+			return handler != null ? handler.execute("destroy", player, block)
+				: false;
 		}
 
 		public boolean onBlockPlace(Player player, Block blockPlaced,
 			Block blockClicked, Item itemInHand) {
 			Handler handler = getBlockHandler(blockPlaced.getType(), Event.PLACE);
-			return handler != null ? !handler.execute(Event.PLACE, player,
-				blockPlaced) : false;
+			return handler != null ? handler.execute("place", player, blockPlaced)
+				: false;
 		}
 
 		public boolean onItemDrop(Player player, Item item) {
 			Handler handler = getBlockHandler(item.getItemId(), Event.DROP);
-			return handler != null ? !handler.execute(Event.DROP, player, item)
-				: false;
+			return handler != null ? handler.execute("drop", player, item) : false;
 		}
 
 		public boolean onItemPickUp(Player player, Item item) {
 			Handler handler = getBlockHandler(item.getItemId(), Event.PICKUP);
-			return handler != null ? !handler.execute(Event.PICKUP, player, item)
-				: false;
+			return handler != null ? handler.execute("pickup", player, item) : false;
 		}
 
 		public boolean onItemUse(Player player, Block blockPlaced,
 			Block blockClicked, Item item) {
 			Handler handler = getBlockHandler(item.getItemId(), Event.USE);
-			return handler != null ? !handler.execute(Event.USE, player, item)
-				: false;
+			return handler != null ? handler.execute("use", player, item) : false;
 		}
 
 		public void onVehicleCreate(BaseVehicle vehicle) {
 			Handler handler = getBlockHandler(vehicle.getId(), Event.PLACE);
-			if (handler != null && !handler.execute(Event.PLACE, null, vehicle)) {
+			if (handler != null && handler.execute("place", null, vehicle)) {
 				vehicle.destroy();
 			}
 		}
 
 		public void onVehicleDestroyed(BaseVehicle vehicle) {
 			Handler handler = getBlockHandler(vehicle.getId(), Event.DESTROY);
-			if (handler != null && !handler.execute(Event.DESTROY, null, vehicle)) {
+			if (handler != null && handler.execute("destroy", null, vehicle)) {
 			}
 		}
 
@@ -84,21 +94,20 @@ public class WatchDog extends PluginEx {
 			Block b =
 				etc.getServer().getBlockAt(block.getX(), block.getY(), block.getZ());
 			Handler handler = getBlockHandler(b.getType(), Event.PLACE);
-			return handler != null ? !handler.execute(Event.PLACE, player, b)
-				: false;
+			return handler != null ? handler.execute("place", player, b) : false;
 		}
 
 		public void onLogin(Player player) {
 			Handler handler = getPlayerHandler(Event.LOGIN);
 			if (handler != null) {
-				handler.execute(Event.LOGIN, player);
+				handler.execute("login", player);
 			}
 		}
 
 		public void onDisconnect(Player player) {
 			Handler handler = getPlayerHandler(Event.LOGOUT);
 			if (handler != null) {
-				handler.execute(Event.LOGOUT, player);
+				handler.execute("logout", player);
 			}
 		}
 
@@ -112,7 +121,7 @@ public class WatchDog extends PluginEx {
 					Player def = defender.getPlayer();
 					if (att != null && def != null) {
 						attDef.put(def.getName(), att.getName());
-						return !handler.execute(Event.ATTACK, att, def);
+						return handler.execute("attack", att, def);
 					}
 				}
 			}
@@ -127,7 +136,7 @@ public class WatchDog extends PluginEx {
 					String attName = attDef.remove(defName);
 					Player att = etc.getServer().getPlayer(attName);
 					if (att != null) {
-						return !handler.execute(Event.KILL, att, player);
+						return handler.execute("kill", att, player);
 					}
 				}
 			}
@@ -136,8 +145,8 @@ public class WatchDog extends PluginEx {
 
 		public boolean onTeleport(Player player, Location from, Location to) {
 			Handler handler = getPlayerHandler(Event.TELEPORT);
-			return handler != null ? !handler.execute(Event.TELEPORT, player,
-				null, to) : false;
+			return handler != null ? handler.execute("teleport", player, null, to)
+				: false;
 		}
 
 	};
@@ -147,20 +156,39 @@ public class WatchDog extends PluginEx {
 	private Command wd = new WdCommand();
 
 	public WatchDog() {
-		Handler.PLUGIN = this;
 	}
 
 	protected void onEnable() {
-		String blocksIniPath = getName() + File.separator + BLOCKS_INI;
-		String playersIniPath = getName() + File.separator + PLAYERS_INI;
+		try {
+			Class.forName("org.h2.Driver");
+			String url =
+				String.format("jdbc:h2:file:%s/%s",
+					new File(".").getAbsoluteFile().getParent().replace('\\', '/'),
+					getProperty(DATABASE_KEY, DATABASE_DEFAULT));
+			String user = getProperty(USERNAME_KEY, USERNAME_DEFAULT);
+			String password = getProperty(PASSWORD_KEY, PASSWORD_DEFAULT);
 
+			JdbcDataSource ds = new JdbcDataSource();
+			ds.setURL(url);
+			ds.setUser(user);
+			ds.setPassword(password);
+			CONN = ds.getConnection();
+
+			Statement stmt = CONN.createStatement();
+			stmt.execute(String.format(
+				"CREATE TABLE IF NOT EXISTS %s (id INT AUTO_INCREMENT PRIMARY KEY, time BIGINT, player VARCHAR, event VARCHAR, target VARCHAR, x INT, y INT, z INT, denied BOOLEAN, kicked BOOLEAN, banned BOOLEAN)",
+				TABLE));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		String blocksIniPath = getName() + File.separator + BLOCKS_INI;
 		try {
 			blocks = new HashMap<Pair<Integer, Event>, Handler>();
 			BufferedReader br = new BufferedReader(new FileReader(blocksIniPath));
 			String line;
 			Pattern pattern =
-				Pattern
-					.compile("^\\s*([a-zA-Z0-9]+)\\.([a-zA-Z]+)\\.([a-zA-Z]+)\\s*=\\s*(.+)$");
+				Pattern.compile("^\\s*([a-zA-Z0-9]+)\\.([a-zA-Z]+)\\.([a-zA-Z]+)\\s*=\\s*(.+)$");
 			while ((line = br.readLine()) != null) {
 				try {
 					Matcher m = pattern.matcher(line);
@@ -192,6 +220,7 @@ public class WatchDog extends PluginEx {
 			}
 		}
 
+		String playersIniPath = getName() + File.separator + PLAYERS_INI;
 		try {
 			players = new HashMap<Event, Handler>();
 			BufferedReader br = new BufferedReader(new FileReader(playersIniPath));
@@ -227,6 +256,13 @@ public class WatchDog extends PluginEx {
 			}
 		}
 
+		try {
+			WdCommand.PAGESIZE =
+				Integer.valueOf(getProperty(PAGESIZE_KEY, PAGESIZE_DEFAULT));
+		} catch (Exception e) {
+			WdCommand.PAGESIZE = 10;
+		}
+
 		addCommand(wd);
 		for (PluginLoader.Hook hook : hooks) {
 			addHook(hook, PluginListener.Priority.MEDIUM, listener);
@@ -238,6 +274,13 @@ public class WatchDog extends PluginEx {
 			removeHook(hook);
 		}
 		removeCommand(wd);
+
+		try {
+			CONN.close();
+			CONN = null;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public Handler getBlockHandler(int itemId, Event event) {
@@ -247,6 +290,25 @@ public class WatchDog extends PluginEx {
 
 	public Handler getPlayerHandler(Event event) {
 		return players.containsKey(event) ? players.get(event) : null;
+	}
+
+	public static String getMessage(String player, String event, String target,
+		int x, int y, int z, boolean denied, boolean kicked, boolean banned) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(player);
+		sb.append(" ");
+		sb.append(event + (target != null ? " " + target : ""));
+		// sb.append(String.format(" (%d,%d,%d)", x, y, z));
+		if (denied) {
+			sb.append(" DENIED");
+		}
+		if (kicked) {
+			sb.append(" KICKED");
+		}
+		if (banned) {
+			sb.append(" BANNED");
+		}
+		return sb.toString();
 	}
 
 }
