@@ -1,5 +1,3 @@
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.*;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
@@ -62,91 +60,60 @@ public class Handler {
 			(int) player1.getX(), (int) player1.getY(), (int) player1.getZ()));
 	}
 
-	private String _event = null;
-	private String _name = null;
-	private String _target = null;
-	private Integer _x = null;
-	private Integer _y = null;
-	private Integer _z = null;
+	private Record _record = null;
 
 	public boolean execute(String event, Player player, String target,
 		Location location) {
-		int id = 0;
-		String name = player.getName();
-		int x = (int) location.x;
-		int y = (int) location.y;
-		int z = (int) location.z;
+		Record record = new Record();
+		record.time = System.currentTimeMillis();
+		record.player = player.getName();
+		record.event = event;
+		record.target = target;
+		record.x = (int) location.x;
+		record.y = (int) location.y;
+		record.z = (int) location.z;
+		record.denied = test("deny", player);
+		record.kicked = test("kick", player);
+		record.banned = test("ban", player);
 
-		boolean denied = test("deny", player);
-		boolean kicked = test("kick", player);
-		boolean banned = test("ban", player);
-
-		if (denied) {
+		if (record.denied) {
 			Chat.toPlayer(
 				player,
 				Colors.Rose
 					+ String.format("%s%s denied", event.toString().toLowerCase(),
 						target != null ? " " + target : ""));
 		}
-		if (kicked) {
-			Actions.kick(event, name, target);
+		if (record.kicked) {
+			Actions.kick(event, record.player, target);
 		}
-		if (banned) {
-			Actions.ban(event, name, target);
+		if (record.banned) {
+			Actions.ban(event, record.player, target);
 		}
 
-		if ((_event == null || !_event.equalsIgnoreCase(event))
-			|| (_name == null || !_name.equalsIgnoreCase(name))
-			|| (_target == null || !_target.equalsIgnoreCase(target))
-			|| (_x == null || !_x.equals(x)) || (_y == null || !_y.equals(y))
-			|| (_z == null || !_z.equals(z))) {
-
-			_event = event;
-			_name = name;
-			_target = target;
-			_x = x;
-			_y = y;
-			_z = z;
+		if (_record == null || !_record.equals(record)) {
+			_record = record;
 
 			boolean logged = test("log", player);
 			if (logged) {
 				try {
-					PreparedStatement stmt =
-						WatchDog.CONN.prepareStatement(
-							String.format(
-								"INSERT INTO %s (time,player,event,target,x,y,z,denied,kicked,banned) VALUES (?,?,?,?,?,?,?,?,?,?);",
-								WatchDog.TABLE), PreparedStatement.RETURN_GENERATED_KEYS);
-					stmt.setLong(1, new Date().getTime());
-					stmt.setString(2, name);
-					stmt.setString(3, event);
-					stmt.setString(4, target);
-					stmt.setInt(5, x);
-					stmt.setInt(6, y);
-					stmt.setInt(7, z);
-					stmt.setBoolean(8, denied);
-					stmt.setBoolean(9, kicked);
-					stmt.setBoolean(10, banned);
-					stmt.executeUpdate();
-					ResultSet rs = stmt.getGeneratedKeys();
-					if (rs.next()) {
-						id = rs.getInt(1);
-					}
+					record.insert();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 
 			String msg =
-				String.format("[%1$d]%2$s %3$s", id,
-					denied ? Colors.Rose : Colors.Gold, WatchDog.getMessage(name, event,
-						target, x, y, z, denied, kicked, banned));
+				String.format("[%1$d]%2$s %3$s", record.id, record.denied ? Colors.Rose
+					: Colors.Gold, WatchDog.getMessage(record.player, record.event,
+					record.target, record.x, record.y, record.z, record.denied,
+					record.kicked, record.banned));
 			for (Player p : etc.getServer().getPlayerList()) {
 				if (test("notify", p)) {
 					Chat.toPlayer(p, msg);
 				}
 			}
 		}
-		return denied;
+		return record.denied;
 	}
 
 	private boolean test(String key, Player player) {

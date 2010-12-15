@@ -1,8 +1,5 @@
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
-import java.util.Map.Entry;
+import java.util.Map.*;
 
 public class WdCommand extends Command {
 
@@ -27,7 +24,7 @@ public class WdCommand extends Command {
 						public Boolean action(Context c) {
 							try {
 								List<Record> list =
-									WdCommand.query(String.format(
+									Record.query(String.format(
 										"SELECT * FROM %s ORDER BY id DESC;", WatchDog.TABLE));
 								int page =
 									c.args.isEmpty() ? 1 : Integer.valueOf(c.args.get(0));
@@ -35,38 +32,39 @@ public class WdCommand extends Command {
 							} catch (Exception e) {
 							}
 							Chat.toPlayer(c.player, (Colors.Rose + "Usage: ")
-								+ (Colors.White + "/wd log <page>"));
+								+ (Colors.White + "/wd log(-l) <page>"));
 							return true;
 						}
 					});
-				put(new String[] { "player", "-p" },
+				put(new String[] { "name", "-n" },
 					new Action<WdCommand.Context, Boolean>() {
 						public Boolean action(Context c) {
 							try {
 								String player = c.args.get(0);
 								List<Record> list =
-									WdCommand.query(String.format(
-										"SELECT * FROM %s WHERE LOWER(player) = LOWER('%s') ORDER BY id DESC;",
+									Record.query(String.format(
+										"SELECT * FROM %s WHERE LOWER(player) LIKE LOWER('%%%s%%') ORDER BY id DESC;",
 										WatchDog.TABLE, player));
 								int page =
 									c.args.size() < 2 ? 1 : Integer.valueOf(c.args.get(1));
-								WdCommand.show(c.player, String.format("(player %s)", player),
+								WdCommand.show(c.player, String.format("(name %s)", player),
 									list, page, null);
 							} catch (Exception e) {
 							}
 							Chat.toPlayer(c.player, (Colors.Rose + "Usage: ")
-								+ (Colors.White + "/wd player [player] <page>"));
+								+ (Colors.White + "/wd name(-n) [name] <page>"));
 							return true;
 						}
 					});
-				put(new String[] { "search", "-s" },
+				put(new String[] { "pos", "-p" },
 					new Action<WdCommand.Context, Boolean>() {
 						public Boolean action(final Context c) {
 							try {
 								List<Record> list =
-									WdCommand.query(String.format(
+									Record.query(String.format(
 										"SELECT * FROM %s ORDER BY id DESC;", WatchDog.TABLE));
-								final int radius = Integer.valueOf(c.args.get(0));
+								final int radius =
+									c.args.size() < 1 ? 1 : Integer.valueOf(c.args.get(0));
 								int page =
 									c.args.size() < 2 ? 1 : Integer.valueOf(c.args.get(1));
 								WdCommand.show(c.player, String.format("(radius %d)", radius),
@@ -84,7 +82,7 @@ public class WdCommand extends Command {
 							} catch (Exception e) {
 							}
 							Chat.toPlayer(c.player, (Colors.Rose + "Usage: ")
-								+ (Colors.White + "/wd search [radius] <page>"));
+								+ (Colors.White + "/wd pos(-p) <radius> <page>"));
 							return true;
 						}
 					});
@@ -93,8 +91,8 @@ public class WdCommand extends Command {
 						try {
 							int id = Integer.valueOf(c.args.get(0));
 							List<Record> list =
-								WdCommand.query(String.format(
-									"SELECT * FROM %s WHERE id = %d;", WatchDog.TABLE, id));
+								Record.query(String.format("SELECT * FROM %s WHERE id = %d;",
+									WatchDog.TABLE, id));
 							if (!list.isEmpty()) {
 								Record record = list.get(0);
 								Location location = new Location(record.x, record.y, record.z);
@@ -103,7 +101,7 @@ public class WdCommand extends Command {
 							}
 						} catch (Exception e) {
 							Chat.toPlayer(c.player, (Colors.Rose + "Usage: ")
-								+ (Colors.White + "/wd go [ID]"));
+								+ (Colors.White + "/wd go(-g) [ID]"));
 						}
 						return true;
 					}
@@ -113,8 +111,8 @@ public class WdCommand extends Command {
 						try {
 							int id = Integer.valueOf(c.args.get(0));
 							List<Record> list =
-								WdCommand.query(String.format(
-									"SELECT * FROM %s WHERE id = %d;", WatchDog.TABLE, id));
+								Record.query(String.format("SELECT * FROM %s WHERE id = %d;",
+									WatchDog.TABLE, id));
 							if (!list.isEmpty()) {
 								Record record = list.get(0);
 								Actions.kick(record.event, record.player, record.target);
@@ -132,8 +130,8 @@ public class WdCommand extends Command {
 						try {
 							int id = Integer.valueOf(c.args.get(0));
 							List<Record> list =
-								WdCommand.query(String.format(
-									"SELECT * FROM %s WHERE id = %d;", WatchDog.TABLE, id));
+								Record.query(String.format("SELECT * FROM %s WHERE id = %d;",
+									WatchDog.TABLE, id));
 							if (!list.isEmpty()) {
 								Record record = list.get(0);
 								Actions.ban(record.event, record.player, record.target);
@@ -150,7 +148,7 @@ public class WdCommand extends Command {
 		};
 
 	public WdCommand() {
-		super("[log|player|search|go|kick|ban]", "WatchDog commands");
+		super("[log|name|pos|go|kick|ban]", "WatchDog commands");
 		setRequire("/watchdog");
 	}
 
@@ -169,16 +167,6 @@ public class WdCommand extends Command {
 			}
 		}
 		return true;
-	}
-
-	private static List<Record> query(String sql) throws SQLException {
-		PreparedStatement stmt = WatchDog.CONN.prepareStatement(sql);
-		ResultSet rs = stmt.executeQuery();
-		List<Record> list = new LinkedList<Record>();
-		while (rs.next()) {
-			list.add(new Record(rs));
-		}
-		return list;
 	}
 
 	private static void show(Player player, String header, List<Record> list,
