@@ -1,6 +1,5 @@
 import java.util.*;
-
-import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.*;
 
 public class Handler {
 
@@ -9,12 +8,26 @@ public class Handler {
 	public Handler() {
 	}
 
-	public void set(String key, String value) {
+	public Set<String> get(String key) {
+		return props.containsKey(key) ? props.get(key) : null;
+	}
+
+	public void set(String key, String op, Set<String> groups) {
 		Set<String> list =
 			props.containsKey(key) ? props.get(key) : new HashSet<String>();
-		list.clear();
-		for (String group : StringTools.split(value, ",")) {
-			list.add(group.toLowerCase());
+		if (op.equals("=")) {
+			list.clear();
+			for (String group : groups) {
+				list.add(group);
+			}
+		} else if (op.equals("+=")) {
+			for (String group : groups) {
+				list.add(group);
+			}
+		} else if (op.equals("-=")) {
+			for (String group : groups) {
+				list.remove(group);
+			}
 		}
 		props.put(key, list);
 	}
@@ -23,71 +36,48 @@ public class Handler {
 		return new ToStringBuilder(this).append("props", props).toString();
 	}
 
-	public boolean execute(String event, Player player, Block block) {
-		return execute(
-			event,
-			player,
-			ItemNames.getName(block.getType()),
-			new Location((int) player.getX(), (int) player.getY(),
-				(int) player.getZ()));
+	public boolean execute(Event event, Player player, Block block) {
+		return execute(event, player, ItemNames.getName(block.getType()),
+			new Location(block.getX(), block.getY(), block.getZ()));
 	}
 
-	public boolean execute(String event, Player player, Item item) {
-		return execute(
-			event,
-			player,
-			ItemNames.getName(item.getItemId()),
-			new Location((int) player.getX(), (int) player.getY(),
-				(int) player.getZ()));
+	public boolean execute(Event event, Player player, Item item) {
+		return execute(event, player, ItemNames.getName(item.getItemId()),
+			player.getLocation());
 	}
 
-	public boolean execute(String event, Player player, BaseVehicle vehicle) {
-		return execute(
-			event,
-			player,
-			ItemNames.getName(vehicle.getId()),
-			new Location((int) player.getX(), (int) player.getY(),
-				(int) player.getZ()));
+	public boolean execute(Event event, Player player, BaseVehicle vehicle) {
+		return execute(event, player, ItemNames.getName(vehicle.getId()),
+			player.getLocation());
 	}
 
-	public boolean execute(String event, Player player) {
-		return execute(event, player, null, new Location((int) player.getX(),
-			(int) player.getY(), (int) player.getZ()));
+	public boolean execute(Event event, Player player) {
+		return execute(event, player, null, player.getLocation());
 	}
 
-	public boolean execute(String event, Player player1, Player player2) {
-		return execute(event, player1, player2.getName(), new Location(
-			(int) player1.getX(), (int) player1.getY(), (int) player1.getZ()));
+	public boolean execute(Event event, Player att, Player def) {
+		return execute(event, att, def.getName(), att.getLocation());
 	}
 
 	private Record _record = null;
 
-	public boolean execute(String event, Player player, String target,
+	public boolean execute(Event event, Player player, String target,
 		Location location) {
 		Record record = new Record();
 		record.time = System.currentTimeMillis();
 		record.player = player.getName();
-		record.event = event;
+		record.event = event.toString();
 		record.target = target;
-		record.x = (int) location.x;
-		record.y = (int) location.y;
-		record.z = (int) location.z;
+		record.location = location;
 		record.denied = test("deny", player);
 		record.kicked = test("kick", player);
 		record.banned = test("ban", player);
 
-		if (record.denied) {
-			Chat.toPlayer(
-				player,
-				Colors.Rose
-					+ String.format("%s%s denied", event.toString().toLowerCase(),
-						target != null ? " " + target : ""));
-		}
 		if (record.kicked) {
-			Actions.kick(event, record.player, target);
+			Actions.kick(record.event, record.player, record.target);
 		}
 		if (record.banned) {
-			Actions.ban(event, record.player, target);
+			Actions.ban(record.event, record.player, record.target);
 		}
 
 		if (_record == null || !_record.equals(record)) {
@@ -103,10 +93,10 @@ public class Handler {
 			}
 
 			String msg =
-				String.format("[%1$d]%2$s %3$s", record.id, record.denied ? Colors.Rose
-					: Colors.Gold, WatchDog.getMessage(record.player, record.event,
-					record.target, record.x, record.y, record.z, record.denied,
-					record.kicked, record.banned));
+				String.format("%1$s%2$s%3$s", record.id != null ? "[" + record.id
+					+ "] " : "", WatchDog.getColor(record), WatchDog.getMessage(
+					record.player, record.event, record.target, record.location,
+					record.denied, record.kicked, record.banned));
 			for (Player p : etc.getServer().getPlayerList()) {
 				if (test("notify", p)) {
 					Chat.toPlayer(p, msg);

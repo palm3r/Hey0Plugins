@@ -1,218 +1,257 @@
 import java.io.*;
+import java.lang.reflect.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.Map.*;
 import java.util.regex.*;
-
-import org.h2.jdbcx.JdbcDataSource;
+import org.apache.commons.lang.*;
 
 public class WatchDog extends PluginEx {
 
 	public static final String TABLE = "log";
 
-	private static final String BLOCKS_INI = "blocks.ini";
-	private static final String PLAYERS_INI = "players.ini";
+	private static final String WATCHDOG_INI = "watchdog.ini";
+	private static final Pattern pattern =
+		Pattern.compile("^\\s*([^\\/]+)\\/([^\\/]+)\\/([^-\\+=\\s]+)\\s*([-\\+]?=)\\s*(.*)$");
 
-	private static final String DATABASE_KEY = "database";
-	private static final String DATABASE_DEFAULT = "WatchDog/log";
-
-	private static final String USERNAME_KEY = "username";
-	private static final String USERNAME_DEFAULT = "username";
-
-	private static final String PASSWORD_KEY = "password";
-	private static final String PASSWORD_DEFAULT = "password";
-
-	private static final String PAGESIZE_KEY = "pagesize";
-	private static final String PAGESIZE_DEFAULT = "8";
+	private static Map<Pair<Integer, Event>, Handler> handlers =
+		new HashMap<Pair<Integer, Event>, Handler>();
+	private static Map<String, String> attdef = new HashMap<String, String>();
+	private static Connection conn = null;
 
 	@SuppressWarnings("serial")
-	private Set<PluginLoader.Hook> hooks = new HashSet<PluginLoader.Hook>() {
-		{
-			add(PluginLoader.Hook.BLOCK_DESTROYED);
-			add(PluginLoader.Hook.BLOCK_PLACE);
-			add(PluginLoader.Hook.ITEM_DROP);
-			add(PluginLoader.Hook.ITEM_PICK_UP);
-			add(PluginLoader.Hook.ITEM_USE);
-			add(PluginLoader.Hook.VEHICLE_CREATE);
-			add(PluginLoader.Hook.VEHICLE_DESTROYED);
-			add(PluginLoader.Hook.LOGIN);
-			add(PluginLoader.Hook.DISCONNECT);
-			add(PluginLoader.Hook.DAMAGE);
-			add(PluginLoader.Hook.HEALTH_CHANGE);
-			add(PluginLoader.Hook.TELEPORT);
-		}
-	};
+	private Map<PluginLoader.Hook, PluginListener.Priority> hooks =
+		new HashMap<PluginLoader.Hook, PluginListener.Priority>() {
+			{
+				put(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.BLOCK_DESTROYED, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.BLOCK_PLACE, PluginListener.Priority.MEDIUM);
+				// put(PluginLoader.Hook.COMPLEX_BLOCK_CHANGE,
+				// PluginListener.Priority.MEDIUM);
+				// put(PluginLoader.Hook.COMPLEX_BLOCK_SEND,
+				// PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.ITEM_DROP, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.ITEM_PICK_UP, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.ITEM_USE, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.LOGIN, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.DISCONNECT, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.DAMAGE, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.HEALTH_CHANGE, PluginListener.Priority.MEDIUM);
+				put(PluginLoader.Hook.TELEPORT, PluginListener.Priority.MEDIUM);
+			}
+		};
 
 	private PluginListener listener = new PluginListener() {
 
-		public boolean onBlockDestroy(Player player, Block block) {
-			Handler handler = getBlockHandler(block.getType(), Event.DESTROY);
-			return handler != null ? handler.execute("destroy", player, block)
-				: false;
+		@Override
+		public boolean onBlockBreak(Player player, Block block) {
+			boolean denied = false;
+			Handler handler = getHandler(block.getType(), Event.DESTROY);
+			if (handler != null) {
+				denied = handler.execute(Event.DESTROY, player, block);
+			}
+			return denied;
 		}
 
+		@Override
+		public boolean onBlockDestroy(Player player, Block block) {
+			boolean denied = false;
+			Handler handler = getHandler(block.getType(), Event.DESTROY);
+			if (handler != null) {
+				denied = handler.execute(Event.DESTROY, player, block);
+			}
+			return denied;
+		}
+
+		@Override
 		public boolean onBlockPlace(Player player, Block blockPlaced,
 			Block blockClicked, Item itemInHand) {
-			Handler handler = getBlockHandler(blockPlaced.getType(), Event.PLACE);
-			return handler != null ? handler.execute("place", player, blockPlaced)
-				: false;
+			boolean denied = false;
+			Handler handler = getHandler(blockPlaced.getType(), Event.PLACE);
+			if (handler != null) {
+				denied = handler.execute(Event.PLACE, player, blockPlaced);
+			}
+			return denied;
 		}
 
+		@Override
+		public boolean onComplexBlockChange(Player player, ComplexBlock cb) {
+			boolean denied = false;
+			Block block = etc.getServer().getBlockAt(cb.getX(), cb.getY(), cb.getZ());
+			if (block != null) {
+				Handler handler = getHandler(block.getType(), Event.USE);
+				if (handler != null) {
+					denied = handler.execute(Event.USE, player, block);
+				}
+			}
+			return denied;
+		}
+
+		@Override
+		public boolean onSendComplexBlock(Player player, ComplexBlock cb) {
+			boolean denied = false;
+			Block block = etc.getServer().getBlockAt(cb.getX(), cb.getY(), cb.getZ());
+			if (block != null) {
+				Handler handler = getHandler(block.getType(), Event.USE);
+				if (handler != null) {
+					denied = handler.execute(Event.USE, player, block);
+				}
+			}
+			return denied;
+		}
+
+		@Override
 		public boolean onItemDrop(Player player, Item item) {
-			Handler handler = getBlockHandler(item.getItemId(), Event.DROP);
-			return handler != null ? handler.execute("drop", player, item) : false;
+			boolean denied = false;
+			Handler handler = getHandler(item.getItemId(), Event.DROP);
+			if (handler != null) {
+				denied = handler.execute(Event.DROP, player, item);
+			}
+			return denied;
 		}
 
+		@Override
 		public boolean onItemPickUp(Player player, Item item) {
-			Handler handler = getBlockHandler(item.getItemId(), Event.PICKUP);
-			return handler != null ? handler.execute("pickup", player, item) : false;
+			boolean denied = false;
+			Handler handler = getHandler(item.getItemId(), Event.PICKUP);
+			if (handler != null) {
+				denied = handler.execute(Event.PICKUP, player, item);
+			}
+			return denied;
 		}
 
+		@Override
 		public boolean onItemUse(Player player, Block blockPlaced,
 			Block blockClicked, Item item) {
-			Handler handler = getBlockHandler(item.getItemId(), Event.USE);
-			return handler != null ? handler.execute("use", player, item) : false;
-		}
-
-		public void onVehicleCreate(BaseVehicle vehicle) {
-			Handler handler = getBlockHandler(vehicle.getId(), Event.PLACE);
-			if (handler != null && handler.execute("place", null, vehicle)) {
-				vehicle.destroy();
+			boolean denied = false;
+			Handler handler = getHandler(item.getItemId(), Event.USE);
+			if (handler != null) {
+				denied = handler.execute(Event.USE, player, item);
 			}
+			return denied;
 		}
 
-		public void onVehicleDestroyed(BaseVehicle vehicle) {
-			Handler handler = getBlockHandler(vehicle.getId(), Event.DESTROY);
-			if (handler != null && handler.execute("destroy", null, vehicle)) {
-			}
-		}
-
-		public boolean onComplexBlockChange(Player player, ComplexBlock block) {
-			Block b =
-				etc.getServer().getBlockAt(block.getX(), block.getY(), block.getZ());
-			Handler handler = getBlockHandler(b.getType(), Event.PLACE);
-			return handler != null ? handler.execute("place", player, b) : false;
-		}
-
+		@Override
 		public void onLogin(Player player) {
-			Handler handler = getPlayerHandler(Event.LOGIN);
+			Handler handler = getHandler(-1, Event.LOGIN);
 			if (handler != null) {
-				handler.execute("login", player);
+				handler.execute(Event.LOGIN, player);
 			}
 		}
 
+		@Override
 		public void onDisconnect(Player player) {
-			Handler handler = getPlayerHandler(Event.LOGOUT);
+			Handler handler = getHandler(-1, Event.LOGOUT);
 			if (handler != null) {
-				handler.execute("logout", player);
+				handler.execute(Event.LOGOUT, player);
 			}
 		}
 
+		@Override
 		public boolean onDamage(PluginLoader.DamageType type, BaseEntity attacker,
 			BaseEntity defender, int amount) {
-			Handler handler = getPlayerHandler(Event.ATTACK);
+			boolean denied = false;
+			Handler handler = getHandler(-1, Event.ATTACK);
 			if (handler != null) {
 				if (attacker != null && defender != null && attacker.isPlayer()
 					&& defender.isPlayer()) {
 					Player att = attacker.getPlayer();
 					Player def = defender.getPlayer();
 					if (att != null && def != null) {
-						attDef.put(def.getName(), att.getName());
-						return handler.execute("attack", att, def);
+						attdef.put(def.getName(), att.getName());
+						denied = handler.execute(Event.ATTACK, att, def);
 					}
 				}
 			}
-			return false;
+			return denied;
 		}
 
+		@Override
 		public boolean onHealthChange(Player player, int oldValue, int newValue) {
-			Handler handler = getPlayerHandler(Event.KILL);
+			boolean denied = false;
+			Handler handler = getHandler(-1, Event.KILL);
 			if (handler != null) {
 				String defName = player.getName();
-				if (newValue <= 0 && attDef.containsKey(defName)) {
-					String attName = attDef.remove(defName);
+				if (newValue <= 0 && attdef.containsKey(defName)) {
+					String attName = attdef.remove(defName);
 					Player att = etc.getServer().getPlayer(attName);
 					if (att != null) {
-						return handler.execute("kill", att, player);
+						denied = handler.execute(Event.KILL, att, player);
 					}
 				}
 			}
-			return false;
+			return denied;
 		}
 
+		@Override
 		public boolean onTeleport(Player player, Location from, Location to) {
-			Handler handler = getPlayerHandler(Event.TELEPORT);
-			return handler != null ? handler.execute("teleport", player, null, to)
-				: false;
+			boolean denied = false;
+			Handler handler = getHandler(-1, Event.TELEPORT);
+			if (handler != null) {
+				denied = handler.execute(Event.TELEPORT, player, null, to);
+			}
+			return denied;
 		}
 
 	};
 
-	private static Map<String, String> attDef = new HashMap<String, String>();
-	private static Connection conn = null;
-
-	private Map<Pair<Integer, Event>, Handler> blocks;
-	private Map<Event, Handler> players;
+	private static WatchDog plugin = null;
 	private Command wd = new WdCommand();
 
 	public WatchDog() {
+		plugin = this;
 	}
 
 	protected void onEnable() {
 		try {
-			Class.forName("org.h2.Driver");
-			String url =
-				String.format("jdbc:h2:file:%s/%s",
-					new File(".").getAbsoluteFile().getParent().replace('\\', '/'),
-					getProperty(DATABASE_KEY, DATABASE_DEFAULT));
-			String user = getProperty(USERNAME_KEY, USERNAME_DEFAULT);
-			String password = getProperty(PASSWORD_KEY, PASSWORD_DEFAULT);
-
-			JdbcDataSource ds = new JdbcDataSource();
-			ds.setURL(url);
-			ds.setUser(user);
-			ds.setPassword(password);
-			conn = ds.getConnection();
-
+			conn = openDatabase("log", "sa", "sa");
 			Statement stmt = conn.createStatement();
+			stmt.execute(String.format("CREATE TABLE IF NOT EXISTS %s"
+				+ " (id INT AUTO_INCREMENT PRIMARY KEY, time BIGINT NOT NULL"
+				+ ", event VARCHAR NOT NULL, player VARCHAR NOT NULL, target VARCHAR"
+				+ ", x DOUBLE NOT NULL, y DOUBLE NOT NULL, z DOUBLE NOT NULL"
+				+ ", denied BOOLEAN DEFAULT FALSE NOT NULL"
+				+ ", kicked BOOLEAN DEFAULT FALSE NOT NULL"
+				+ ", banned BOOLEAN DEFAULT FALSE NOT NULL)", TABLE));
 			stmt.execute(String.format(
-				"CREATE TABLE IF NOT EXISTS %s (id INT AUTO_INCREMENT PRIMARY KEY, time BIGINT, player VARCHAR, event VARCHAR, target VARCHAR, x INT, y INT, z INT, denied BOOLEAN, kicked BOOLEAN, banned BOOLEAN)",
+				"CREATE INDEX IF NOT EXISTS time_idx ON %s (time);", TABLE));
+			stmt.execute(String.format(
+				"CREATE INDEX IF NOT EXISTS event_idx ON %s (event, player, target);",
 				TABLE));
+			stmt.execute(String.format(
+				"CREATE INDEX IF NOT EXISTS location_idx ON %s (x, y, z);", TABLE));
+			stmt.execute(String.format(
+				"CREATE INDEX IF NOT EXISTS action_idx ON %s (denied, kicked, banned);",
+				TABLE));
+
+			Record.INSERT =
+				conn.prepareStatement(String.format("INSERT INTO %s"
+					+ " (time, event, player, target, x, y, z, denied, kicked, banned)"
+					+ " VALUES (?,?,?,?,?,?,?,?,?,?);", TABLE),
+					PreparedStatement.RETURN_GENERATED_KEYS);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-		String blocksIniPath = getName() + File.separator + BLOCKS_INI;
+		String watchDogIni = getRelativePath(WATCHDOG_INI);
 		try {
-			blocks = new HashMap<Pair<Integer, Event>, Handler>();
-			BufferedReader br = new BufferedReader(new FileReader(blocksIniPath));
+			BufferedReader br = new BufferedReader(new FileReader(watchDogIni));
 			String line;
-			Pattern pattern =
-				Pattern.compile("^\\s*([a-zA-Z0-9]+)\\.([a-zA-Z]+)\\.([a-zA-Z]+)\\s*=\\s*(.+)$");
 			for (int index = 1; (line = br.readLine()) != null; ++index) {
-				try {
-					Matcher m = pattern.matcher(line);
-					if (m.matches()) {
-						Pair<Integer, String> item = ItemNames.parse(m.group(1).trim());
-						String eventName = m.group(2).trim().toUpperCase();
-						Event event = Enum.valueOf(Event.class, eventName);
-						Pair<Integer, Event> key = Pair.create(item.first, event);
-						Handler handler =
-							blocks.containsKey(key) ? blocks.get(key) : new Handler();
-						String property = m.group(3).trim().toLowerCase();
-						String value = m.group(4).trim();
-						handler.set(property, value);
-						blocks.put(key, handler);
-					}
-				} catch (Exception e) {
-					warn("parse error: %s (%s:%d)", line, BLOCKS_INI, index);
+				if (line.trim().isEmpty() || line.trim().startsWith("#"))
+					continue;
+				if (!parse(line)) {
+					warn("parse error: %s (%s:%d)", line, watchDogIni, index);
 				}
 			}
 			br.close();
 		} catch (IOException e) {
-			File file = new File(blocksIniPath);
+			File file = new File(watchDogIni);
 			if (!file.exists()) {
 				try {
 					file.createNewFile();
@@ -220,92 +259,131 @@ public class WatchDog extends PluginEx {
 					e1.printStackTrace();
 				}
 			}
-		}
-
-		String playersIniPath = getName() + File.separator + PLAYERS_INI;
-		try {
-			players = new HashMap<Event, Handler>();
-			BufferedReader br = new BufferedReader(new FileReader(playersIniPath));
-			String line;
-			Pattern pattern =
-				Pattern.compile("^\\s*([a-zA-Z]+)\\.([a-zA-Z]+)\\s*=\\s*(.+)$");
-			for (int index = 1; (line = br.readLine()) != null; ++index) {
-				try {
-					Matcher m = pattern.matcher(line);
-					if (m.matches()) {
-						String eventName = m.group(1).trim().toUpperCase();
-						Event event = Enum.valueOf(Event.class, eventName);
-						Handler handler =
-							players.containsKey(event) ? players.get(event) : new Handler();
-						String property = m.group(2).trim().toLowerCase();
-						String value = m.group(3).trim();
-						handler.set(property, value);
-						players.put(event, handler);
-					}
-				} catch (Exception e) {
-					warn("parse error: %s (%s:%d)", line, PLAYERS_INI, index);
-				}
-			}
-			br.close();
-		} catch (IOException e) {
-			File file = new File(playersIniPath);
-			if (!file.exists()) {
-				try {
-					file.createNewFile();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-			}
-		}
-
-		try {
-			WdCommand.PAGESIZE =
-				Integer.valueOf(getProperty(PAGESIZE_KEY, PAGESIZE_DEFAULT));
-		} catch (Exception e) {
-			WdCommand.PAGESIZE = 10;
 		}
 
 		addCommand(wd);
-		for (PluginLoader.Hook hook : hooks) {
-			addHook(hook, PluginListener.Priority.MEDIUM, listener);
+		for (Entry<PluginLoader.Hook, PluginListener.Priority> entry : hooks.entrySet()) {
+			addHook(entry.getKey(), entry.getValue(), listener);
 		}
 	}
 
 	protected void onDisable() {
-		for (PluginLoader.Hook hook : hooks) {
-			removeHook(hook);
+		for (Entry<PluginLoader.Hook, PluginListener.Priority> entry : hooks.entrySet()) {
+			removeHook(entry.getKey());
 		}
 		removeCommand(wd);
 
-		try {
-			conn.close();
+		if (conn != null) {
+			try {
+				conn.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			conn = null;
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 
-	public Handler getBlockHandler(int itemId, Event event) {
+	public static boolean parse(String line) {
+		boolean updated = false;
+		Matcher m = pattern.matcher(line);
+		if (m.matches()) {
+			// items/player
+			Map<Integer, String> targets = new LinkedHashMap<Integer, String>();
+			for (String target : StringUtils.split(m.group(1), ",")) {
+				target = target.trim();
+				if (target.equalsIgnoreCase("player")) {
+					targets.put(-1, "player");
+				} else {
+					Pattern p2 =
+						Pattern.compile(target.replaceAll("\\*", ".*"),
+							Pattern.CASE_INSENSITIVE);
+					for (Entry<Integer, String> entry : ItemNames.all().entrySet()) {
+						if (p2.matcher(entry.getKey().toString()).matches()
+							|| p2.matcher(entry.getValue()).matches()) {
+							targets.put(entry.getKey(), entry.getValue());
+						}
+					}
+				}
+			}
+
+			// events
+			Set<Event> events = new LinkedHashSet<Event>();
+			for (String eventName : StringUtils.split(m.group(2), ",")) {
+				eventName = eventName.trim();
+				Pattern pattern =
+					Pattern.compile(eventName.replaceAll("\\*", ".*"),
+						Pattern.CASE_INSENSITIVE);
+				for (Field field : Event.class.getFields()) {
+					if (pattern.matcher(field.getName()).matches()) {
+						field.setAccessible(true);
+						try {
+							Event event = (Event) field.get(null);
+							events.add(event);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+
+			// properties
+			Set<String> keys = new LinkedHashSet<String>();
+			for (String key : StringUtils.split(m.group(3), ",")) {
+				keys.add(key.trim());
+			}
+
+			// op
+			String op = m.group(4);
+
+			// groups
+			Set<String> values = new LinkedHashSet<String>();
+			for (String value : StringUtils.split(m.group(5), ",")) {
+				values.add(value.trim());
+			}
+
+			//
+			for (Entry<Integer, String> target : targets.entrySet()) {
+				for (Event event : events) {
+					Pair<Integer, Event> action = Pair.create(target.getKey(), event);
+					Handler handler =
+						handlers.containsKey(action) ? handlers.get(action) : new Handler();
+					for (String key : keys) {
+						handler.set(key, op, values);
+						plugin.info("%s/%s/%s = %s", target.getValue(),
+							event.toString().toLowerCase(), key, handler.get(key));
+						handlers.put(action, handler);
+						updated = true;
+					}
+				}
+			}
+		}
+		return updated;
+	}
+
+	public static Handler getHandler(int itemId, Event event) {
 		Pair<Integer, Event> key = Pair.create(itemId, event);
-		return blocks.containsKey(key) ? blocks.get(key) : null;
+		return handlers.containsKey(key) ? handlers.get(key) : null;
 	}
 
-	public Handler getPlayerHandler(Event event) {
-		return players.containsKey(event) ? players.get(event) : null;
+	public static ResultSet query(String sql) throws SQLException {
+		Statement stmt = conn.createStatement();
+		// System.out.println("SQL: " + stmt.toString());
+		return stmt.executeQuery(sql);
 	}
 
-	public static PreparedStatement prepareStatement(String sql)
-		throws SQLException {
-		return conn.prepareStatement(sql);
-	}
-
-	public static PreparedStatement prepareStatement(String sql,
-		int autoGeneratedKeys) throws SQLException {
-		return conn.prepareStatement(sql, autoGeneratedKeys);
+	public static String getColor(Record record) {
+		String color = Colors.Yellow;
+		if (record.denied)
+			color = Colors.Gold;
+		if (record.kicked)
+			color = Colors.Rose;
+		if (record.banned)
+			color = Colors.Red;
+		return color;
 	}
 
 	public static String getMessage(String player, String event, String target,
-		int x, int y, int z, boolean denied, boolean kicked, boolean banned) {
+		Location location, boolean denied, boolean kicked, boolean banned) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(player);
 		sb.append(" ");

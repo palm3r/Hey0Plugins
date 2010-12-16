@@ -1,18 +1,19 @@
 import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
+
 import org.apache.commons.lang.builder.*;
 
 public class Record {
 
+	public static PreparedStatement INSERT = null;
+
 	public Integer id;
 	public Long time;
-	public String player;
 	public String event;
+	public String player;
 	public String target;
-	public Integer x;
-	public Integer y;
-	public Integer z;
+	public Location location;
 	public Boolean denied;
 	public Boolean kicked;
 	public Boolean banned;
@@ -21,17 +22,18 @@ public class Record {
 	}
 
 	private Record(ResultSet rs) throws SQLException {
-		id = rs.getInt(1);
-		time = rs.getLong(2);
-		player = rs.getString(3);
-		event = rs.getString(4);
-		target = rs.getString(5);
-		x = rs.getInt(6);
-		y = rs.getInt(7);
-		z = rs.getInt(8);
-		denied = rs.getBoolean(9);
-		kicked = rs.getBoolean(10);
-		banned = rs.getBoolean(11);
+		int index = 0;
+		id = rs.getInt(++index);
+		time = rs.getLong(++index);
+		event = rs.getString(++index);
+		player = rs.getString(++index);
+		target = rs.getString(++index);
+		location =
+			new Location(rs.getDouble(++index), rs.getDouble(++index),
+				rs.getDouble(++index));
+		denied = rs.getBoolean(++index);
+		kicked = rs.getBoolean(++index);
+		banned = rs.getBoolean(++index);
 	}
 
 	public String toString() {
@@ -42,22 +44,19 @@ public class Record {
 		if (!(obj instanceof Record))
 			return false;
 		Record r = (Record) obj;
-		return new EqualsBuilder().append(player, r.player).append(event, r.event).append(
-			target, r.target).append(x, r.x).append(y, r.y).append(z, r.z).isEquals();
+		return (new EqualsBuilder().append(event, r.event).append(player, r.player).append(
+			target, r.target).isEquals())
+			&& Math.round(location.x) == Math.round(r.location.x)
+			&& Math.round(location.y) == Math.round(r.location.y)
+			&& Math.round(location.z) == Math.round(r.location.z);
 	}
 
 	public int hashCode() {
-		return new HashCodeBuilder().append(time).append(player).append(event).append(
-			target).append(x).append(y).append(z).append(denied).append(kicked).append(
-			banned).hashCode();
+		return HashCodeBuilder.reflectionHashCode(this);
 	}
 
 	public static List<Record> query(String sql) throws SQLException {
-		PreparedStatement stmt = WatchDog.prepareStatement(sql);
-
-		// System.out.println("SQL: " + stmt.toString());
-
-		ResultSet rs = stmt.executeQuery();
+		ResultSet rs = WatchDog.query(sql);
 		List<Record> list = new LinkedList<Record>();
 		while (rs.next()) {
 			list.add(new Record(rs));
@@ -66,26 +65,22 @@ public class Record {
 	}
 
 	public void insert() throws SQLException {
-		PreparedStatement stmt =
-			WatchDog.prepareStatement(
-				String.format(
-					"INSERT INTO %s (time,player,event,target,x,y,z,denied,kicked,banned) VALUES (?,?,?,?,?,?,?,?,?,?);",
-					WatchDog.TABLE), PreparedStatement.RETURN_GENERATED_KEYS);
-		stmt.setLong(1, time);
-		stmt.setString(2, player);
-		stmt.setString(3, event);
-		stmt.setString(4, target);
-		stmt.setInt(5, x);
-		stmt.setInt(6, y);
-		stmt.setInt(7, z);
-		stmt.setBoolean(8, denied);
-		stmt.setBoolean(9, kicked);
-		stmt.setBoolean(10, banned);
+		int index = 0;
+		INSERT.setLong(++index, time);
+		INSERT.setString(++index, event);
+		INSERT.setString(++index, player);
+		INSERT.setString(++index, target);
+		INSERT.setDouble(++index, location.x);
+		INSERT.setDouble(++index, location.y);
+		INSERT.setDouble(++index, location.z);
+		INSERT.setBoolean(++index, denied);
+		INSERT.setBoolean(++index, kicked);
+		INSERT.setBoolean(++index, banned);
 
-		// System.out.println("SQL: " + stmt.toString());
+		// System.out.println("SQL: " + INSERT.toString());
 
-		stmt.executeUpdate();
-		ResultSet rs = stmt.getGeneratedKeys();
+		INSERT.executeUpdate();
+		ResultSet rs = INSERT.getGeneratedKeys();
 		if (rs.next()) {
 			id = rs.getInt(1);
 		}

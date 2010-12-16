@@ -1,51 +1,57 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.*;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+
+import org.apache.commons.lang.StringUtils;
 
 public class ItemNames {
 
-	private static final String ITEMS_TXT = "items.txt";
-	private static Map<Integer, String> items;
+	private static final String fileName = "items.txt";
+	private static Map<Integer, String> items = new HashMap<Integer, String>();
 
 	static {
 		try {
-			items = MapTools.load(new HashMap<Integer, String>(), ITEMS_TXT,
-				new Converter<String, Pair<Integer, String>>() {
-					public Pair<Integer, String> convertTo(String line) {
-						if (line.startsWith("#") || line.isEmpty())
-							return null;
-						String[] s = StringTools.split(line, ":", 2);
-						return Pair.create(Integer.valueOf(s[1].trim()), s[0].trim()
-							.toLowerCase());
+			BufferedReader br = new BufferedReader(new FileReader(fileName));
+			String line;
+			for (int index = 1; (line = br.readLine()) != null; ++index) {
+				if (!line.isEmpty()) {
+					try {
+						String[] s = StringUtils.split(line, ":");
+						items.put(Integer.valueOf(s[1].trim()), s[0].trim().toLowerCase());
+					} catch (Exception e) {
+						System.out.println(String.format("parse error: %s (%s:%d)", line,
+							fileName, index));
+						// e.printStackTrace();
 					}
-				});
+				}
+			}
+			br.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	public static int getId(String name) {
-		String itemName = name.trim().toLowerCase();
-		for (Map.Entry<Integer, String> entry : items.entrySet()) {
-			if (entry.getValue().equalsIgnoreCase(itemName)) {
-				return entry.getKey();
-			}
-		}
-		return -1;
+	public static Map<Integer, String> all() {
+		return items;
 	}
 
 	public static String getName(int id) {
 		return items.containsKey(id) ? items.get(id) : null;
 	}
 
-	public static Pair<Integer, String> parse(String str) {
-		String idName = str.trim().toLowerCase();
-		Integer id = null;
-		String name = null;
-		try {
-			id = Integer.valueOf(idName);
-		} catch (Exception e) {
-			id = getId(idName);
+	public static Map<Integer, String> parse(String str) {
+		Pattern pattern =
+			Pattern.compile(str.replaceAll("\\*", ".*"), Pattern.CASE_INSENSITIVE);
+		Map<Integer, String> map = new HashMap<Integer, String>();
+		for (Entry<Integer, String> entry : items.entrySet()) {
+			if (pattern.matcher(entry.getKey().toString()).matches()
+				|| pattern.matcher(entry.getValue()).matches()) {
+				map.put(entry.getKey(), entry.getValue());
+			}
 		}
-		name = getName(id);
-		return id != null && name != null ? Pair.create(id, name) : null;
+		return map;
 	}
+
 }
