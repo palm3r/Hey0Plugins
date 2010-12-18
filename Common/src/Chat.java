@@ -1,160 +1,87 @@
 import java.util.*;
+import org.apache.commons.collections.*;
 
-/**
- * Chat helper class
- * 
- * @author palm3r
- */
 public final class Chat {
 
-	/**
-	 * Broadcast message
-	 * Message is sent to all players
-	 * 
-	 * @param format
-	 * @param params
-	 */
-	public static void toBroadcast(String format, Object... params) {
-		String msg = String.format(format, params);
+	public static void broadcast(String format, Object... args) {
+		String msg = String.format(format, args);
 		for (Player player : etc.getServer().getPlayerList()) {
 			player.sendMessage(msg);
 		}
 	}
 
-	/**
-	 * Send message to the player which the name is corresponding
-	 * 
-	 * @param player
-	 * @param format
-	 * @param params
-	 */
-	public static void toPlayer(String player, String format, Object... params) {
-		Chat.toPlayer(etc.getServer().getPlayer(player), format, params);
+	public static void player(String player, String format, Object... args) {
+		Player p = etc.getServer().getPlayer(player);
+		if (p != null) {
+			Chat.player(player, format, args);
+		}
 	}
 
-	/**
-	 * Send messsage to the player instance
-	 * 
-	 * @param player
-	 * @param format
-	 * @param params
-	 */
-	public static void toPlayer(Player player, String format, Object... params) {
-		if (player != null && format != null) {
-			String msg = String.format(format, params);
+	public static void player(Player player, String format, Object... args) {
+		player.sendMessage(String.format(format, args));
+	}
+
+	public static void player(Player[] players, String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : players) {
 			player.sendMessage(msg);
 		}
 	}
 
-	/**
-	 * Send message to specified players
-	 * 
-	 * @param players
-	 * @param format
-	 * @param params
-	 */
-	public static void toPlayers(Player[] players, String format,
-		Object... params) {
-		if (players != null && format != null) {
-			final List<Player> t = Arrays.asList(players);
-			byCondition(new Converter<Player, Boolean>() {
-				public Boolean convertTo(Player p) {
-					return t.contains(p);
-				}
-			}, format, params);
+	public static void player(Collection<Player> players, String format,
+		Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : players) {
+			player.sendMessage(msg);
 		}
 	}
 
-	/**
-	 * Send message to all admin players
-	 * 
-	 * @param format
-	 * @param params
-	 */
-	public static void toAdmin(String format, Object... params) {
-		if (format != null) {
-			byCondition(new Converter<Player, Boolean>() {
-				public Boolean convertTo(Player p) {
-					return p.isAdmin();
-				}
-			}, format, params);
+	public static void admin(String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : etc.getServer().getPlayerList()) {
+			if (player.isAdmin()) {
+				player.sendMessage(msg);
+			}
 		}
 	}
 
-	/**
-	 * Send message to group members which the name is corresponding
-	 * 
-	 * @param group
-	 * @param format
-	 * @param params
-	 */
-	public static void toGroup(final String group, String format,
-		Object... params) {
-		if (group != null && format != null) {
-			byCondition(new Converter<Player, Boolean>() {
-				public Boolean convertTo(Player p) {
-					return p.isInGroup(group);
-				}
-			}, format, params);
+	public static void group(final String group, String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : etc.getServer().getPlayerList()) {
+			if (player.isInGroup(group)) {
+				player.sendMessage(msg);
+			}
 		}
 	}
 
-	/**
-	 * Send message to players which can use specified command
-	 * 
-	 * @param command
-	 * @param format
-	 * @param params
-	 */
-	public static void hasPrivilege(final String command, String format,
-		Object... params) {
-		if (command != null && format != null) {
-			byCondition(new Converter<Player, Boolean>() {
-				public Boolean convertTo(Player p) {
-					return p.canUseCommand(command);
-				}
-			}, format, params);
+	public static void auth(final String command, String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : etc.getServer().getPlayerList()) {
+			if (player.canUseCommand(command)) {
+				player.sendMessage(msg);
+			}
 		}
 	}
 
-	/**
-	 * Send message to neighbors of specified player
-	 * 
-	 * @param player
-	 * @param distance
-	 * @param format
-	 * @param params
-	 */
-	public static void toNeighbors(final Player player, final double distance,
-		String format, Object... params) {
-		if (player != null && format != null) {
-			byCondition(new Converter<Player, Boolean>() {
-				public Boolean convertTo(Player p) {
-					double x = Math.pow(p.getX() - player.getX(), 2.0);
-					double y = Math.pow(p.getY() - player.getY(), 2.0);
-					double z = Math.pow(p.getZ() - player.getZ(), 2.0);
-					double d = Math.sqrt(x + y + z);
-					return d <= distance;
-				}
-			}, format, params);
+	public static void neighbors(final Player player, final double radius,
+		String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player p : etc.getServer().getPlayerList()) {
+			double distance =
+				Math.abs(Math.sqrt(Math.pow(p.getX() - player.getX(), 2)
+					+ Math.pow(p.getY() - player.getY(), 2)
+					+ Math.pow(p.getZ() - player.getZ(), 2)));
+			if (distance <= radius) {
+				p.sendMessage(msg);
+			}
 		}
 	}
 
-	/**
-	 * Send message to players who matched with specified condition
-	 * 
-	 * @param converter
-	 * @param format
-	 * @param params
-	 */
-	public static void byCondition(Converter<Player, Boolean> converter,
-		String format, Object... params) {
-		if (converter != null && format != null) {
-			String msg = String.format(format, params);
-			for (Player player : etc.getServer().getPlayerList()) {
-				if (converter.convertTo(player)) {
-					player.sendMessage(msg);
-				}
+	public static void condition(Predicate predicate, String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : etc.getServer().getPlayerList()) {
+			if (predicate.evaluate(player)) {
+				player.sendMessage(msg);
 			}
 		}
 	}

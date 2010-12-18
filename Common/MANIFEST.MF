@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Class-Path: . log4j.jar commons-dbutils.jar commons-collections.jar h2.jar commons-lang.jar
+

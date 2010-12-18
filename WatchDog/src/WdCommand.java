@@ -1,10 +1,11 @@
-import java.sql.ResultSet;
 import java.util.*;
+
+import org.apache.commons.lang.*;
 
 public class WdCommand extends Command {
 
 	private abstract class Option {
-		private boolean value;
+		private final boolean value;
 
 		public Option(boolean value) {
 			this.value = value;
@@ -18,66 +19,66 @@ public class WdCommand extends Command {
 	}
 
 	@SuppressWarnings("serial")
-	private Map<String, Option> options = new HashMap<String, Option>() {
+	private final Map<String, Option> options = new HashMap<String, Option>() {
 		{
+			put("-a", new Option(true) {
+				@Override
+				public String parse(String value, double x, double y, double z) {
+					return String.format("action LIKE UPPER('%%%s%%')", value);
+				}
+			});
+			put("-A", new Option(true) {
+				@Override
+				public String parse(String value, double x, double y, double z) {
+					return String.format("action = UPPER('%s')", value);
+				}
+			});
 			put("-b", new Option(false) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format("banned = TRUE");
 				}
 			});
 			put("-B", new Option(false) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format("banned = FALSE");
 				}
 			});
 			put("-d", new Option(false) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format("denied = TRUE");
 				}
 			});
 			put("-D", new Option(false) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format("denied = FALSE");
 				}
 			});
-			put("-e", new Option(true) {
-				public String parse(String value, double x, double y, double z) {
-					return String.format("event LIKE UPPER('%%%s%%')", value);
-				}
-			});
-			put("-E", new Option(true) {
-				public String parse(String value, double x, double y, double z) {
-					return String.format("event = UPPER('%s')", value);
-				}
-			});
 			put("-k", new Option(false) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format("kicked = TRUE");
 				}
 			});
 			put("-K", new Option(false) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format("kicked = FALSE");
 				}
 			});
 			put("-l", new Option(true) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
-					String[] loc = StringTools.split(value, ",");
+					String[] loc = StringUtils.split(value, ", ");
 					return loc.length == 3 ? String.format(
 						"x = %s AND y = %s AND z = %s", loc[0], loc[1], loc[2]) : null;
 				}
 			});
-			put("-n", new Option(true) {
-				public String parse(String value, double x, double y, double z) {
-					return String.format("LOWER(player) LIKE LOWER('%%%s%%')", value);
-				}
-			});
-			put("-N", new Option(true) {
-				public String parse(String value, double x, double y, double z) {
-					return String.format("LOWER(player) = LOWER('%s')", value);
-				}
-			});
 			put("-r", new Option(true) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format(
 						"%s >= ABS(SQRT(POWER(%f - x, 2) + POWER(%f - y, 2) + POWER(%f - z, 2)))",
@@ -85,20 +86,43 @@ public class WdCommand extends Command {
 				}
 			});
 			put("-R", new Option(true) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format(
 						"%s < ABS(SQRT(POWER(%f - x, 2) + POWER(%f - y, 2) + POWER(%f - z, 2)))",
 						value, x, y, z);
 				}
 			});
-			put("-t", new Option(true) {
+			put("-s", new Option(true) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
-					return String.format("LOWER(target) LIKE LOWER('%%%s%%')", value);
+					return String.format(
+						"(LOWER(srcId) LIKE LOWER('%%%1$s%%') OR LOWER(srcName) LIKE LOWER('%%%1$s%%'))",
+						value);
+				}
+			});
+			put("-S", new Option(true) {
+				@Override
+				public String parse(String value, double x, double y, double z) {
+					return String.format(
+						"(LOWER(srcId) = LOWER('%1$s') OR LOWER(srcName) = LOWER('%1$s'))",
+						value);
+				}
+			});
+			put("-t", new Option(true) {
+				@Override
+				public String parse(String value, double x, double y, double z) {
+					return String.format(
+						"(LOWER(targetId) LIKE LOWER('%%%1$s%%') OR LOWER(targetName) LIKE LOWER('%%%1$s%%'))",
+						value);
 				}
 			});
 			put("-T", new Option(true) {
+				@Override
 				public String parse(String value, double x, double y, double z) {
-					return String.format("LOWER(target) = LOWER('%s')", value);
+					return String.format(
+						"(LOWER(targetId) = LOWER('%1$s') OR LOWER(targetName) = LOWER('%1$s'))",
+						value);
 				}
 			});
 		}
@@ -110,21 +134,22 @@ public class WdCommand extends Command {
 		setRequire("/watchdog");
 	}
 
+	@Override
 	public boolean execute(Player player, String command, List<String> args) {
 		try {
 			String action = args.isEmpty() ? "help" : args.get(0).toLowerCase();
 			if (action.equals("help")) {
-				Chat.toPlayer(player,
+				Chat.player(player,
 					(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 						+ (Colors.LightGray + "Commands"));
-				Chat.toPlayer(player, (Colors.LightGray + "Log: ")
+				Chat.player(player, (Colors.LightGray + "Log: ")
 					+ (Colors.White + "/wd log <options> ")
-					+ (Colors.LightGray + "(use '/wd log -h' for details)"));
-				Chat.toPlayer(player, (Colors.LightGray + "Warp: ")
+					+ (Colors.LightGray + "(see '/wd log -h' for details)"));
+				Chat.player(player, (Colors.LightGray + "Warp: ")
 					+ (Colors.White + "/wd go [id]"));
-				Chat.toPlayer(player, (Colors.LightGray + "Kick: ")
+				Chat.player(player, (Colors.LightGray + "Kick: ")
 					+ (Colors.White + "/wd kick [id]"));
-				Chat.toPlayer(player, (Colors.LightGray + "Ban: ")
+				Chat.player(player, (Colors.LightGray + "Ban: ")
 					+ (Colors.White + "/wd ban [id]"));
 				// Chat.toPlayer(player, (Colors.LightGray + "Config: ") + (Colors.White
 				// + "/wd config [expression]"));
@@ -139,44 +164,48 @@ public class WdCommand extends Command {
 						unprocessedArgs.add(a);
 						continue;
 					} else if (a.equalsIgnoreCase("-h")) {
-						Chat.toPlayer(player,
+						Chat.player(player,
 							(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 								+ (Colors.LightGray + "Log options"));
-						Chat.toPlayer(player, (Colors.White + "-n [player] ")
-							+ (Colors.LightGray + "Search by player (partial: "
-								+ Colors.White + "-N" + Colors.LightGray + ")"));
-						Chat.toPlayer(player, (Colors.White + "-e [event] ")
-							+ (Colors.LightGray + "Search by event (partial: " + Colors.White
-								+ "-E" + Colors.LightGray + ")"));
-						Chat.toPlayer(
+						Chat.player(player, (Colors.White + "-a [action] ")
+							+ (Colors.LightGray + "Search by action (exact: ")
+							+ (Colors.White + "-A") + (Colors.LightGray + ")"));
+						Chat.player(
 							player,
-							(Colors.LightGray + "(Item events: destroy, place, use, drop, pickup)"));
-						Chat.toPlayer(
+							(Colors.LightGray + "(Item actions: destroy, place, use, drop, pickup)"));
+						Chat.player(
 							player,
-							(Colors.LightGray + "(Player events: login, logout, attack, kill, teleport)"));
-						Chat.toPlayer(player, (Colors.White + "-t [target] ")
-							+ (Colors.LightGray + "Search by target (partial: "
-								+ Colors.White + "-T" + Colors.LightGray + ")"));
-						Chat.toPlayer(player, (Colors.White + "-l [x,y,z] ")
+							(Colors.LightGray + "(Player actions: login, logout, attack, kill, teleport)"));
+						Chat.player(player, (Colors.White + "-s [player] ")
+							+ (Colors.LightGray + "Search by player (exact: ")
+							+ (Colors.White + "-S") + (Colors.LightGray + ")"));
+						Chat.player(player, (Colors.White + "-t [target] ")
+							+ (Colors.LightGray + "Search by target (exact: ")
+							+ (Colors.White + "-T") + (Colors.LightGray + ")"));
+						Chat.player(player, (Colors.White + "-l [x,y,z] ")
 							+ (Colors.LightGray + "Search by location"));
-						Chat.toPlayer(player, (Colors.White + "-r [range] ")
-							+ (Colors.LightGray + "In range only (inverted: " + Colors.White
-								+ "-R" + Colors.LightGray + ")"));
-						Chat.toPlayer(player, (Colors.White + "-d ")
-							+ (Colors.LightGray + "Denied only (inverted: " + Colors.White
-								+ "-D" + Colors.LightGray + ")"));
-						Chat.toPlayer(player, (Colors.White + "-k ")
-							+ (Colors.LightGray + "Kicked only (inverted: " + Colors.White
-								+ "-K" + Colors.LightGray + ")"));
-						Chat.toPlayer(player, (Colors.White + "-b ")
-							+ (Colors.LightGray + "Banned only (inverted: " + Colors.White
-								+ "-B" + Colors.LightGray + ")"));
+						Chat.player(player, (Colors.White + "-r [range] ")
+							+ (Colors.LightGray + "In range only (inverted: ")
+							+ (Colors.White + "-R") + (Colors.LightGray + ")"));
+						Chat.player(player, (Colors.White + "-d ")
+							+ (Colors.LightGray + "Denied only (inverted: ")
+							+ (Colors.White + "-D") + (Colors.LightGray + ")"));
+						Chat.player(player, (Colors.White + "-k ")
+							+ (Colors.LightGray + "Kicked only (inverted: ")
+							+ (Colors.White + "-K") + (Colors.LightGray + ")"));
+						Chat.player(player, (Colors.White + "-b ")
+							+ (Colors.LightGray + "Banned only (inverted: ")
+							+ (Colors.White + "-B") + (Colors.LightGray + ")"));
+						Chat.player(player, (Colors.White + "-p [page] ")
+							+ (Colors.LightGray + "Select page"));
+						// Chat.player(player, (Colors.White + "-- ")
+						// + (Colors.LightGray + "Use previous options"));
 						return true;
 					} else if (a.equalsIgnoreCase("-p")) {
 						try {
 							page = Integer.valueOf(args.get(++index));
 						} catch (Exception e) {
-							Chat.toPlayer(player,
+							Chat.player(player,
 								(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 									+ (Colors.LightGray + "'-p' option requires page number"));
 							return true;
@@ -184,12 +213,12 @@ public class WdCommand extends Command {
 					} else if (a.equalsIgnoreCase("-l")) {
 						String value = unprocessedArgs.get(++index);
 						try {
-							String[] loc = StringTools.split(value, ",");
+							String[] loc = StringUtils.split(value, ", ");
 							x = Long.valueOf(loc[0]);
 							y = Long.valueOf(loc[1]);
 							z = Long.valueOf(loc[2]);
 						} catch (Exception e) {
-							Chat.toPlayer(player,
+							Chat.player(player,
 								(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 									+ (Colors.White + value)
 									+ (Colors.LightGray + " is not unrecognizable as location"));
@@ -205,11 +234,11 @@ public class WdCommand extends Command {
 					z = Math.round(player.getZ());
 				}
 
-				Map<String, String> map = new LinkedHashMap<String, String>();
+				Map<String, String> conditionMap = new LinkedHashMap<String, String>();
 				for (int index = 0; index < unprocessedArgs.size(); ++index) {
 					String key = unprocessedArgs.get(index);
 					if (!options.containsKey(key)) {
-						Chat.toPlayer(player,
+						Chat.player(player,
 							(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 								+ (Colors.LightGray + "'%s' is not supported"), key);
 						return true;
@@ -220,73 +249,61 @@ public class WdCommand extends Command {
 							try {
 								value = unprocessedArgs.get(++index);
 							} catch (Exception e) {
-								Chat.toPlayer(player,
+								Chat.player(player,
 									(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 										+ (Colors.LightGray + "'%s' option requires parameter"),
 									key);
 								return true;
 							}
 						}
-						map.put(key, opt.parse(value, x, y, z));
+						conditionMap.put(key, opt.parse(value, x, y, z));
 					}
 				}
-				String where = CollectionTools.join(map.values(), " AND ");
 
-				ResultSet rs =
-					WatchDog.query(String.format("SELECT COUNT(*) FROM %s%s;",
-						WatchDog.TABLE, where.isEmpty() ? "" : " WHERE " + where));
-				int count = rs.next() ? rs.getInt(1) : 0;
-
-				List<Record> list =
-					Record.query(String.format(
-						"SELECT * FROM %s%s ORDER BY id DESC LIMIT %d OFFSET %d;",
-						WatchDog.TABLE, where.isEmpty() ? "" : " WHERE " + where, line,
-						(page - 1) * line));
+				String[] conditions = conditionMap.values().toArray(new String[0]);
+				int count = Table.count(Log.class, conditions);
+				List<Log> list =
+					Table.select(Log.class, (page - 1) * line, line, conditions);
 
 				if (list.isEmpty()) {
-					Chat.toPlayer(player,
+					Chat.player(player,
 						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-							+ (Colors.LightGray + "No record found"));
+							+ (Colors.LightGray + "Log not found"));
 				} else {
 					int max = (int) Math.ceil((double) count / (double) line);
-					Chat.toPlayer(player,
+					Chat.player(player,
 						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-							+ (Colors.LightGray + "%d record%s found (page %d/%d)"), count,
+							+ (Colors.LightGray + "%d log%s found (page %d/%d)"), count,
 						count > 1 ? "s" : "", page, max);
-					for (Record record : list) {
+					for (Log log : list) {
 						StringBuilder sb = new StringBuilder();
-						sb.append("[" + record.id + "]");
-						sb.append(WatchDog.getColor(record));
+						sb.append("[" + log.id + "]");
+						sb.append(log.getColor());
 						sb.append(" ");
-						sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", record.time));
+						sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", log.time));
 						sb.append(" ");
-						sb.append(WatchDog.getMessage(record.player, record.event,
-							record.target, record.location, record.denied, record.kicked,
-							record.banned));
-						Chat.toPlayer(player, sb.toString());
+						sb.append(log.getMessage());
+						Chat.player(player, sb.toString());
 					}
 				}
 			} else if (action.equals("go") || action.equals("kick")
 				|| action.equals("ban")) {
-				String id = args.get(1);
-				List<Record> results =
-					Record.query(String.format("SELECT * FROM %s WHERE id = %s;",
-						WatchDog.TABLE, id));
-				if (results.isEmpty()) {
-					Chat.toPlayer(player,
+				Long id = Long.valueOf(args.get(1));
+				Log log = Table.get(Log.class, id);
+				if (log == null) {
+					Chat.player(player,
 						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-							+ (Colors.LightGray + "record (id = %s) is not found"), id);
+							+ (Colors.LightGray + "Log (id = %d) is not found"), id);
 					return true;
 				}
-				Record record = results.get(0);
 				if (action.equals("go")) {
-					player.teleportTo(record.location);
+					player.teleportTo(new Location(log.x, log.y, log.z));
 				}
 				if (action.equals("kick")) {
-					Actions.kick(record.event, record.player, record.target);
+					Actions.kick(log);
 				}
 				if (action.equals("ban")) {
-					Actions.ban(record.event, record.player, record.target);
+					Actions.ban(log);
 				}
 				/*
 				 * } else if (action.equals("config")) {
@@ -298,7 +315,7 @@ public class WdCommand extends Command {
 				 * }
 				 */
 			} else {
-				Chat.toPlayer(player,
+				Chat.player(player,
 					(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 						+ (Colors.LightGray + "'%s' is not supported"), action);
 			}

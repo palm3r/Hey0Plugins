@@ -6,15 +6,15 @@ public class VotEx extends PluginEx {
 	public static final String EXPIRES_KEY = "expires";
 	public static final String EXPIRES_DEFAULT = "120";
 
-	private ScheduledExecutorService scheduler;
+	private final ScheduledExecutorService scheduler;
 	private ScheduledFuture<?> future;
-	private Map<String, Boolean> answers;
+	private final Map<String, Boolean> answers;
 	private int expires;
-	private Command vote, yes, no;
+	private final Command vote, yes, no;
 
 	public VotEx() {
 		scheduler = Executors.newSingleThreadScheduledExecutor();
-		answers = new TreeMap<String, Boolean>();
+		answers = new HashMap<String, Boolean>();
 		vote = new VoteCommand(this);
 		yes = new YesCommand(this);
 		no = new NoCommand(this);
@@ -31,34 +31,38 @@ public class VotEx extends PluginEx {
 	}
 
 	public void beginVote(final String subject) {
-		Chat.toBroadcast((Colors.LightBlue + "[VOTE] ") + (Colors.White + subject));
-		Chat.toBroadcast((Colors.LightGray + "Please vote ")
+		Chat.broadcast((Colors.LightBlue + "[VOTE] ") + (Colors.White + subject));
+		Chat.broadcast((Colors.LightGray + "Please vote ")
 			+ (Colors.LightGreen + yes.getCommand()) + (Colors.LightGray + " or ")
 			+ (Colors.Rose + no.getCommand()));
 		answers.clear();
 		future = scheduler.schedule(new Runnable() {
+			@Override
 			public void run() {
 				int yes = 0;
 				for (Map.Entry<String, Boolean> entry : answers.entrySet()) {
-					if (entry.getValue())
+					if (entry.getValue()) {
 						yes++;
+					}
 				}
 				int no = answers.size() - yes;
 				int abs = etc.getServer().getPlayerList().size() - (yes + no);
-				Chat.toBroadcast((Colors.LightBlue + "[VOTE] ")
+				Chat.broadcast((Colors.LightBlue + "[VOTE] ")
 					+ (Colors.White + subject));
-				Chat.toBroadcast((Colors.LightGreen + "YES " + yes)
+				Chat.broadcast((Colors.LightGreen + "YES " + yes)
 					+ (Colors.Rose + " NO " + no) + (Colors.LightGray + " ABS " + abs));
 				future = null;
 			}
 		}, expires, TimeUnit.SECONDS);
 	}
 
+	@Override
 	protected void onEnable() {
 		expires = Integer.valueOf(getProperty(EXPIRES_KEY, EXPIRES_DEFAULT));
 		addCommand(vote, yes, no);
 	}
 
+	@Override
 	protected void onDisable() {
 		removeCommand(vote, yes, no);
 	}

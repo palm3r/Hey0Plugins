@@ -1,4 +1,5 @@
 import java.util.*;
+import org.apache.commons.lang.StringUtils;
 
 public class WarpEx extends PluginEx {
 
@@ -26,7 +27,7 @@ public class WarpEx extends PluginEx {
 	public static final String LISTNS_ALIAS_KEY = "listns-alias";
 	public static final String LISTNS_ALIAS_DEFAULT = "/ln";
 
-	private Map<String, Location> warps;
+	private Map<String, Location> warps = new IgnoreCaseMap<Location>();
 	private Namespace defaultNamespace;
 	private String hiddenPrefix;
 	private String[] warpAlias, setwarpAlias, removewarpAlias, listwarpsAlias,
@@ -34,27 +35,23 @@ public class WarpEx extends PluginEx {
 	private Command warp, setwarp, removewarp, listwarps, listns;
 
 	public WarpEx() {
-		this.warps = new TreeMap<String, Location>();
-		// addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.LOW);
 	}
 
 	public Pair<String, String> normalizeKey(Player player, String key) {
-		String[] s = key.split(":", 2);
+		String[] s = StringUtils.split(key, ":", 2);
 		String ns = s.length > 1 ? s[0] : defaultNamespace.get(player);
 		String warp = s.length > 1 ? s[1] : s[0];
 		if (!warp.matches("[^ ,:]+")
-			|| ((ns.equalsIgnoreCase(Namespace.Global.get(player)) || ns
-				.equalsIgnoreCase(Namespace.Secret.get(player))) && (warp
-				.startsWith(hiddenPrefix)))) {
-			Chat.toPlayer(player, "normalizeKey: ns = %s, warp = %s", ns, warp);
+			|| ((ns.equalsIgnoreCase(Namespace.Global.get(player)) || ns.equalsIgnoreCase(Namespace.Secret.get(player))) && (warp.startsWith(hiddenPrefix))))
+			// Chat.player(player, "normalizeKey: ns = %s, warp = %s", ns, warp);
 			return null;
-		}
-		return new Pair<String, String>(ns, warp);
+		return Pair.create(ns, warp);
 	}
 
 	public Set<Pair<String, String>> getAllWarps(Player player) {
-		Set<Pair<String, String>> set = new TreeSet<Pair<String, String>>(
-			new Comparator<Pair<String, String>>() {
+		Set<Pair<String, String>> set =
+			new TreeSet<Pair<String, String>>(new Comparator<Pair<String, String>>() {
+				@Override
 				public int compare(Pair<String, String> o1, Pair<String, String> o2) {
 					int c1 = o1.first.compareTo(o2.first);
 					return c1 != 0 ? c1 : o1.second.compareTo(o2.second);
@@ -95,42 +92,46 @@ public class WarpEx extends PluginEx {
 		String global = Namespace.Global.get(player);
 		String secret = Namespace.Secret.get(player);
 		return (ns.equalsIgnoreCase(personal))
-			|| (ns.equalsIgnoreCase(global) && (player
-				.canUseCommand("/warpex-modify-" + global) || (!modify && player
-				.canUseCommand("/warpex-" + global))))
-			|| (ns.equalsIgnoreCase(secret) && (player
-				.canUseCommand("/warpex-modify-" + secret) || (!modify && player
-				.canUseCommand("/warpex-" + secret))))
+			|| (ns.equalsIgnoreCase(global) && (player.canUseCommand("/warpex-modify-"
+				+ global) || (!modify && player.canUseCommand("/warpex-" + global))))
+			|| (ns.equalsIgnoreCase(secret) && (player.canUseCommand("/warpex-modify-"
+				+ secret) || (!modify && player.canUseCommand("/warpex-" + secret))))
 			|| (!warp.startsWith(hiddenPrefix) && !modify
 				&& !ns.equalsIgnoreCase(global) && !ns.equalsIgnoreCase(secret))
 			|| player.isAdmin();
 	}
 
+	@Override
 	protected void onEnable() {
-		defaultNamespace = Enum.valueOf(Namespace.class,
-			StringTools.Capitalize(getProperty(DEFAULT_NAMESPACE_KEY,
-				DEFAULT_NAMESPACE_DEFAULT)));
+		defaultNamespace =
+			Enum.valueOf(Namespace.class, StringUtils.capitalize(getProperty(
+				DEFAULT_NAMESPACE_KEY, DEFAULT_NAMESPACE_DEFAULT)));
 		hiddenPrefix = getProperty(HIDDEN_PREFIX_KEY, HIDDEN_PREFIX_DEFAULT);
-		warpAlias = StringTools.split(
-			getProperty(WARP_ALIAS_KEY, WARP_ALIAS_DEFAULT), ",");
-		setwarpAlias = StringTools.split(
-			getProperty(SETWARP_ALIAS_KEY, SETWARP_ALIAS_DEFAULT), ",");
-		removewarpAlias = StringTools.split(
-			getProperty(REMOVEWARP_ALIAS_KEY, REMOVEWARP_ALIAS_DEFAULT), ",");
-		listwarpsAlias = StringTools.split(
-			getProperty(LISTWARPS_ALIAS_KEY, LISTWARPS_ALIAS_DEFAULT), ",");
-		listnsAlias = StringTools.split(
-			getProperty(LISTNS_ALIAS_KEY, LISTNS_ALIAS_DEFAULT), ",");
+		warpAlias =
+			StringUtils.split(getProperty(WARP_ALIAS_KEY, WARP_ALIAS_DEFAULT), ", ");
+		setwarpAlias =
+			StringUtils.split(getProperty(SETWARP_ALIAS_KEY, SETWARP_ALIAS_DEFAULT),
+				", ");
+		removewarpAlias =
+			StringUtils.split(
+				getProperty(REMOVEWARP_ALIAS_KEY, REMOVEWARP_ALIAS_DEFAULT), ", ");
+		listwarpsAlias =
+			StringUtils.split(
+				getProperty(LISTWARPS_ALIAS_KEY, LISTWARPS_ALIAS_DEFAULT), ", ");
+		listnsAlias =
+			StringUtils.split(getProperty(LISTNS_ALIAS_KEY, LISTNS_ALIAS_DEFAULT),
+				", ");
 
-		addCommand(warp = new WarpCommand(this, warpAlias),
-			setwarp = new SetWarpCommand(this, setwarpAlias),
-			removewarp = new RemoveWarpCommand(this, removewarpAlias),
-			listwarps = new ListWarpsCommand(this, listwarpsAlias),
-			listns = new ListNsCommand(this, listnsAlias));
+		addCommand(warp = new WarpCommand(this, warpAlias), setwarp =
+			new SetWarpCommand(this, setwarpAlias), removewarp =
+			new RemoveWarpCommand(this, removewarpAlias), listwarps =
+			new ListWarpsCommand(this, listwarpsAlias), listns =
+			new ListNsCommand(this, listnsAlias));
 
 		loadWarps();
 	}
 
+	@Override
 	protected void onDisable() {
 		removeCommand(warp, setwarp, removewarp, listwarps, listns);
 	}
@@ -138,18 +139,21 @@ public class WarpEx extends PluginEx {
 	private void loadWarps() {
 		try {
 			String fileName = getProperty(WARPS_FILE_KEY, WARPS_FILE_DEFAULT);
-			warps = load(new HashMap<String, Location>(), fileName,
-				new Converter<String, Pair<String, Location>>() {
-					public Pair<String, Location> convertTo(String value) {
-						String[] s = value.split(",");
-						if (s.length < 4 || s[0].isEmpty())
-							return null;
-						Location location = new Location(Double.valueOf(s[1]), Double
-							.valueOf(s[2]), Double.valueOf(s[3]), s.length >= 5 ? Float
-							.valueOf(s[4]) : 0.0f, s.length >= 6 ? Float.valueOf(s[5]) : 0.0f);
-						return new Pair<String, Location>(s[0], location);
-					}
-				});
+			warps =
+				load(new HashMap<String, Location>(), fileName,
+					new Converter<String, Pair<String, Location>>() {
+						@Override
+						public Pair<String, Location> convert(String value) {
+							String[] s = value.split(",");
+							if (s.length < 4 || s[0].isEmpty())
+								return null;
+							Location location =
+								new Location(Double.valueOf(s[1]), Double.valueOf(s[2]),
+									Double.valueOf(s[3]), s.length >= 5 ? Float.valueOf(s[4])
+										: 0.0f, s.length >= 6 ? Float.valueOf(s[5]) : 0.0f);
+							return Pair.create(s[0], location);
+						}
+					});
 		} catch (Exception e) {
 			saveWarps();
 		}
@@ -159,7 +163,8 @@ public class WarpEx extends PluginEx {
 		try {
 			String fileName = getProperty(WARPS_FILE_KEY, WARPS_FILE_DEFAULT);
 			save(warps, fileName, new Converter<Pair<String, Location>, String>() {
-				public String convertTo(Pair<String, Location> value) {
+				@Override
+				public String convert(Pair<String, Location> value) {
 					return String.format("%s,%f,%f,%f,%f,%f", value.first,
 						value.second.x, value.second.y, value.second.z, value.second.rotX,
 						value.second.rotY);

@@ -11,17 +11,17 @@ public class HealCommand extends Command {
 		Player target =
 			args.isEmpty() ? player : etc.getServer().getPlayer(args.get(0));
 		if (target == null) {
-			Chat.toPlayer(player, (Colors.LightGreen + args.get(0))
+			Chat.player(player, (Colors.LightGreen + args.get(0))
 				+ (Colors.LightGray + " is not found"));
 		} else {
 			target.setHealth(20);
-			Chat.toPlayer(
+			Chat.player(
 				target,
 				(Colors.LightGray + "You healed ")
 					+ (Colors.LightGreen + (target == player ? "yourself"
 						: target.getName())));
 			if (target != player) {
-				Chat.toPlayer(target, (Colors.LightGreen + player.getName())
+				Chat.player(target, (Colors.LightGreen + player.getName())
 					+ (Colors.LightGray + " healed you"));
 			}
 		}

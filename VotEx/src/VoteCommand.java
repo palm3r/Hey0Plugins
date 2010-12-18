@@ -2,7 +2,7 @@ import java.util.*;
 
 public class VoteCommand extends Command {
 
-	private VotEx plugin;
+	private final VotEx plugin;
 
 	public VoteCommand(VotEx plugin) {
 		super("[subject]", "Begin vote");
@@ -10,6 +10,7 @@ public class VoteCommand extends Command {
 		this.plugin = plugin;
 	}
 
+	@Override
 	public boolean execute(Player player, String command, List<String> args) {
 		StringBuilder sb = new StringBuilder();
 		for (String a : args) {
@@ -20,11 +21,11 @@ public class VoteCommand extends Command {
 		}
 		String subject = sb.toString().trim();
 		if (subject.length() == 0) {
-			Chat.toPlayer(player, getUsage(false, true));
+			Chat.player(player, getUsage(false, true));
 			return true;
 		}
 		if (plugin.isVoting()) {
-			Chat.toPlayer(player, (Colors.Rose + "Another vote on progress now"));
+			Chat.player(player, (Colors.Rose + "Another vote on progress now"));
 			return true;
 		}
 		plugin.beginVote(subject);

@@ -1,14 +1,16 @@
 import java.io.*;
 import java.util.*;
+import java.util.Map.Entry;
 
 public final class MapTools {
 
 	public static <K, V> String join(Map<K, V> map, String entrySeparator,
-		final String keyValueSeparator) {
+		final String format) {
 		return MapTools.join(map, entrySeparator,
 			new Converter<Map.Entry<K, V>, String>() {
-				public String convertTo(Map.Entry<K, V> entry) {
-					return entry.getKey() + keyValueSeparator + entry.getValue();
+				@Override
+				public String convert(Entry<K, V> entry) {
+					return String.format(format, entry.getKey(), entry.getValue());
 				}
 			});
 	}
@@ -17,11 +19,12 @@ public final class MapTools {
 		Converter<Map.Entry<K, V>, String> converter) {
 		StringBuilder sb = new StringBuilder();
 		for (Map.Entry<K, V> entry : map.entrySet()) {
-			String str = converter.convertTo(entry);
-			if (str != null) {
-				if (sb.length() > 0)
+			String s = converter.convert(entry);
+			if (s != null) {
+				if (sb.length() > 0) {
 					sb.append(entrySeparator);
-				sb.append(str);
+				}
+				sb.append(s);
 			}
 		}
 		return sb.toString();
@@ -32,7 +35,7 @@ public final class MapTools {
 		BufferedReader br = new BufferedReader(new FileReader(fileName));
 		String line;
 		while ((line = br.readLine()) != null) {
-			Pair<K, V> result = converter.convertTo(line);
+			Pair<K, V> result = converter.convert(line);
 			if (result != null) {
 				map.put(result.first, result.second);
 			}
@@ -53,8 +56,8 @@ public final class MapTools {
 		}
 		PrintWriter pw = new PrintWriter(new FileWriter(file));
 		for (Map.Entry<K, V> entry : map.entrySet()) {
-			String line = converter.convertTo(new Pair<K, V>(entry.getKey(), entry
-				.getValue()));
+			String line =
+				converter.convert(Pair.create(entry.getKey(), entry.getValue()));
 			if (line != null) {
 				pw.println(line);
 			}

@@ -2,7 +2,7 @@ import java.util.*;
 
 public class NoCommand extends Command {
 
-	private VotEx plugin;
+	private final VotEx plugin;
 
 	public NoCommand(VotEx plugin) {
 		super(null, "Vote NO");
@@ -10,12 +10,13 @@ public class NoCommand extends Command {
 		this.plugin = plugin;
 	}
 
+	@Override
 	public boolean execute(Player player, String command, List<String> args) {
 		if (!plugin.isVoting()) {
-			Chat.toPlayer(player, (Colors.Rose + "No vote on progress"));
+			Chat.player(player, (Colors.Rose + "No vote on progress"));
 			return true;
 		}
-		Chat.toPlayer(player, (Colors.LightGray + "You have voted ")
+		Chat.player(player, (Colors.LightGray + "You have voted ")
 			+ (Colors.Rose + "NO"));
 		plugin.getAnswers().put(player.getName(), false);
 		return true;

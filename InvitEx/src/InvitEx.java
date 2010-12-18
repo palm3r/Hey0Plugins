@@ -6,14 +6,14 @@ public class InvitEx extends PluginEx {
 	public static final String EXPIRES_KEY = "expires";
 	public static final String EXPIRES_DEFAULT = "60";
 
-	private ScheduledExecutorService scheduler;
-	private Map<String, Pair<String, ScheduledFuture<?>>> futures;
+	private final ScheduledExecutorService scheduler;
+	private final Map<String, Pair<String, ScheduledFuture<?>>> futures;
 	private int expires;
-	private Command invite, accept;
+	private final Command invite, accept;
 
 	public InvitEx() {
 		scheduler = Executors.newSingleThreadScheduledExecutor();
-		futures = new TreeMap<String, Pair<String, ScheduledFuture<?>>>();
+		futures = new HashMap<String, Pair<String, ScheduledFuture<?>>>();
 		invite = new InviteCommand(this);
 		accept = new AcceptCommand(this);
 
@@ -21,8 +21,8 @@ public class InvitEx extends PluginEx {
 	}
 
 	public void addInvite(String hostName, String guestName, Runnable timeout) {
-		ScheduledFuture<?> future = scheduler.schedule(timeout, expires,
-			TimeUnit.SECONDS);
+		ScheduledFuture<?> future =
+			scheduler.schedule(timeout, expires, TimeUnit.SECONDS);
 		futures.put(guestName, new Pair<String, ScheduledFuture<?>>(hostName,
 			future));
 	}
@@ -38,11 +38,13 @@ public class InvitEx extends PluginEx {
 		}
 	}
 
+	@Override
 	protected void onEnable() {
 		expires = Integer.valueOf(getProperty(EXPIRES_KEY, EXPIRES_DEFAULT));
 		addCommand(invite, accept);
 	}
 
+	@Override
 	protected void onDisable() {
 		removeCommand(invite, accept);
 	}

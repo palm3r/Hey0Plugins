@@ -1,67 +1,38 @@
-/**
- * Generic pair class
- * 
- * @author palm3r
- * @param <T1>
- *          type of first member
- * @param <T2>
- *          type of second member
- */
-public class Pair<T1, T2> {
-	public T1 first;
-	public T2 second;
+import org.apache.commons.lang.builder.*;
 
-	/**
-	 * Public constructor
-	 * 
-	 * @param first
-	 * @param second
-	 */
-	public Pair(T1 first, T2 second) {
+public class Pair<T, U> {
+
+	public T first;
+	public U second;
+
+	public Pair(T first, U second) {
 		this.first = first;
 		this.second = second;
 	}
 
-	/**
-	 * Static create method
-	 * Use this method instead of constructor normally
-	 * 
-	 * @param <U1>
-	 * @param <U2>
-	 * @param first
-	 * @param second
-	 * @return
-	 */
-	public static <U1, U2> Pair<U1, U2> create(U1 first, U2 second) {
-		return new Pair<U1, U2>(first, second);
+	public static <T, U> Pair<T, U> create(T first, U second) {
+		return new Pair<T, U>(first, second);
 	}
 
-	/**
-	 * Convert to string
-	 */
-	public String toString() {
-		return first + "," + second;
-	}
-
-	/**
-	 * Return whether this object equals with specified object
-	 */
+	@Override
 	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
 		if (!(obj instanceof Pair))
 			return false;
-		Pair<?, ?> pair = (Pair<?, ?>) obj;
-		return pair.first.equals(first) && pair.second.equals(second);
+		Pair<?, ?> p = (Pair<?, ?>) obj;
+		return new EqualsBuilder().append(this.first, p.first).append(this.second,
+			p.second).isEquals();
 	}
 
-	/**
-	 * Return hash value
-	 */
+	@Override
 	public int hashCode() {
-		final int multiplier = 42463;
-		int hash = Pair.class.hashCode();
-		hash = multiplier * hash + (first == null ? 102199 : first.hashCode());
-		hash = multiplier * hash + (second == null ? 100237 : second.hashCode());
-		return hash;
+		return new HashCodeBuilder(17, 29).append(first).append(second).hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return new ToStringBuilder(this).append(first).append(second).toString();
 	}
 
 }

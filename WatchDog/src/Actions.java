@@ -1,20 +1,21 @@
 public class Actions {
 
-	public static void kick(String event, String name, String target) {
-		Player player = etc.getServer().getPlayer(name);
+	public static void kick(Log log) {
+		Player player = etc.getServer().getPlayer(log.player);
 		if (player != null) {
-			player.kick(String.format("reason: %s%s", event, target != null ? " "
-				+ target : ""));
-			Chat.toBroadcast(Colors.Rose + "%s was kicked (reason: %s%s)", name,
-				event, target != null ? " " + target : "");
+			player.kick(String.format("reason: %s%s", log.action,
+				log.targetName != null ? " " + log.targetName : ""));
+			Chat.broadcast(Colors.Rose + "%s was kicked (reason: %s%s)",
+				log.player, log.action, log.targetName != null ? " " + log.targetName
+					: "");
 		}
 	}
 
-	public static void ban(String event, String name, String target) {
-		kick(event, name, target);
-		etc.getServer().ban(name);
-		Chat.toBroadcast(Colors.Rose + "%s was banned (reason: %s%s)", name, event,
-			target != null ? " " + target : "");
+	public static void ban(Log log) {
+		kick(log);
+		etc.getServer().ban(log.player);
+		Chat.broadcast(Colors.Rose + "%s was banned (reason: %s%s)", log.player,
+			log.action, log.targetName != null ? " " + log.targetName : "");
 	}
 
 }

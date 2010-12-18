@@ -2,7 +2,7 @@ import java.util.*;
 
 public class YesCommand extends Command {
 
-	private VotEx plugin;
+	private final VotEx plugin;
 
 	public YesCommand(VotEx plugin) {
 		super(null, "Vote YES");
@@ -10,12 +10,13 @@ public class YesCommand extends Command {
 		this.plugin = plugin;
 	}
 
+	@Override
 	public boolean execute(Player player, String command, List<String> args) {
 		if (!plugin.isVoting()) {
-			Chat.toPlayer(player, (Colors.Rose + "No vote on progress"));
+			Chat.player(player, (Colors.Rose + "No vote on progress"));
 			return true;
 		}
-		Chat.toPlayer(player, (Colors.LightGray + "You have voted ")
+		Chat.player(player, (Colors.LightGray + "You have voted ")
 			+ (Colors.LightGreen + "YES"));
 		plugin.getAnswers().put(player.getName(), true);
 		return true;

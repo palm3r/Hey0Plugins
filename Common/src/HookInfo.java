@@ -4,8 +4,9 @@
  * @author palm3r
  */
 final class HookInfo {
-	private PluginListener listener;
-	private PluginListener.Priority priority;
+
+	private final PluginListener listener;
+	private final PluginListener.Priority priority;
 	private PluginRegisteredListener registered;
 
 	public HookInfo(PluginListener listener, PluginListener.Priority priority) {
@@ -15,8 +16,8 @@ final class HookInfo {
 
 	public void enable(PluginLoader.Hook hook, Plugin plugin) {
 		if (registered == null) {
-			registered = etc.getLoader()
-				.addListener(hook, listener, plugin, priority);
+			registered =
+				etc.getLoader().addListener(hook, listener, plugin, priority);
 		}
 	}
 
@@ -26,4 +27,5 @@ final class HookInfo {
 			registered = null;
 		}
 	}
+
 }

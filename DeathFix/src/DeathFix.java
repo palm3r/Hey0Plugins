@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import org.apache.commons.lang.*;
 
 public class DeathFix extends PluginEx {
 
@@ -10,16 +11,7 @@ public class DeathFix extends PluginEx {
 	private static final String GOD_ON_LOGIN_DEFAULT = "false";
 
 	@SuppressWarnings("serial")
-	private Set<PluginLoader.Hook> hooks = new HashSet<PluginLoader.Hook>() {
-		{
-			add(PluginLoader.Hook.DAMAGE);
-			add(PluginLoader.Hook.HEALTH_CHANGE);
-			add(PluginLoader.Hook.LOGIN);
-		}
-	};
-
-	@SuppressWarnings("serial")
-	private Map<String, String> defaults = new HashMap<String, String>() {
+	private final Map<String, String> defaults = new HashMap<String, String>() {
 		{
 			put("default", "%s died");
 			put("cactus", "%s died by cactus");
@@ -34,14 +26,14 @@ public class DeathFix extends PluginEx {
 		}
 	};
 
-	private PluginListener listener = new PluginListener() {
+	private final PluginListener listener = new PluginListener() {
+		@Override
 		public boolean onDamage(PluginLoader.DamageType type, BaseEntity attacker,
 			BaseEntity defender, int amount) {
 			if (defender.isPlayer()) {
 				Player p = defender.getPlayer();
-				if (godPlayers.contains(p.getName())) {
+				if (godPlayers.contains(p.getName()))
 					return true;
-				}
 				if (p.getHealth() <= amount) {
 					String attackerName = "";
 					if (attacker != null) {
@@ -71,11 +63,12 @@ public class DeathFix extends PluginEx {
 			return false;
 		}
 
+		@Override
 		public boolean onHealthChange(Player player, int oldValue, int newValue) {
 			if (newValue <= 0) {
 				if (death.containsKey(player.getName())) {
 					Pair<String, Location> p = death.remove(player.getName());
-					Chat.toBroadcast(Colors.Red + p.first);
+					Chat.broadcast(Colors.Red + p.first);
 					info(p.first + " (%.0f,%.0f,%.0f)", p.second.x, p.second.y,
 						p.second.z);
 				}
@@ -85,6 +78,7 @@ public class DeathFix extends PluginEx {
 			return false;
 		}
 
+		@Override
 		public void onLogin(Player player) {
 			if (godOnLogin && !isGod(player) && canBeGod(player)) {
 				toggleGod(player);
@@ -93,21 +87,27 @@ public class DeathFix extends PluginEx {
 	};
 
 	private Map<String, String> formats;
-	private Map<String, Pair<String, Location>> death =
+	private final Map<String, Pair<String, Location>> death =
 		new HashMap<String, Pair<String, Location>>();
 	private Collection<String> godGroups;
-	private Collection<String> godPlayers = new HashSet<String>();
+	private final Collection<String> godPlayers = new HashSet<String>();
 	private boolean godOnLogin = false;
-	private HealCommand heal = new HealCommand();
-	private GodCommand god = new GodCommand(this);
 
 	public DeathFix() {
+		addHook(PluginLoader.Hook.DAMAGE, PluginListener.Priority.MEDIUM, listener);
+		addHook(PluginLoader.Hook.HEALTH_CHANGE, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.LOGIN, PluginListener.Priority.MEDIUM, listener);
+		addCommand(new HealCommand(), new GodCommand(this));
 	}
 
+	@Override
 	protected void onEnable() {
-		godGroups =
-			StringTools.split(new HashSet<String>(),
-				getProperty(GOD_GROUPS_KEY, GOD_GROUPS_DEFAULT), ",");
+		godGroups = new HashSet<String>();
+		for (String group : StringUtils.split(
+			getProperty(GOD_GROUPS_KEY, GOD_GROUPS_DEFAULT), ", ")) {
+			godGroups.add(group);
+		}
 		godOnLogin =
 			Boolean.valueOf(getProperty(GOD_ON_LOGIN_KEY, GOD_ON_LOGIN_DEFAULT));
 
@@ -115,7 +115,8 @@ public class DeathFix extends PluginEx {
 			formats =
 				load(new HashMap<String, String>(), MESSAGES_INI,
 					new Converter<String, Pair<String, String>>() {
-						public Pair<String, String> convertTo(String line) {
+						@Override
+						public Pair<String, String> convert(String line) {
 							try {
 								String[] s = line.split("=", 2);
 								String first = s[0].trim().toLowerCase();
@@ -133,7 +134,8 @@ public class DeathFix extends PluginEx {
 				formats = new HashMap<String, String>(defaults);
 				save(formats, MESSAGES_INI,
 					new Converter<Pair<String, String>, String>() {
-						public String convertTo(Pair<String, String> entry) {
+						@Override
+						public String convert(Pair<String, String> entry) {
 							String line = entry.first.toLowerCase() + " = " + entry.second;
 							debug("%s => %s", entry, line);
 							return line;
@@ -143,25 +145,12 @@ public class DeathFix extends PluginEx {
 				e1.printStackTrace();
 			}
 		}
-
-		addCommand(heal, god);
-		for (PluginLoader.Hook hook : hooks) {
-			addHook(hook, PluginListener.Priority.MEDIUM, listener);
-		}
-	}
-
-	protected void onDisable() {
-		for (PluginLoader.Hook hook : hooks) {
-			removeHook(hook);
-		}
-		removeCommand(heal, god);
 	}
 
 	public boolean canBeGod(Player player) {
 		for (String group : player.getGroups()) {
-			if (godGroups.contains(group)) {
+			if (godGroups.contains(group))
 				return true;
-			}
 		}
 		return false;
 	}
@@ -180,7 +169,7 @@ public class DeathFix extends PluginEx {
 				godPlayers.add(name);
 				god = true;
 			}
-			Chat.toPlayer(player, (god ? Colors.LightBlue : Colors.Rose)
+			Chat.player(player, (god ? Colors.LightBlue : Colors.Rose)
 				+ "God mode %s", god ? "on" : "off");
 		}
 		return false;

@@ -3,8 +3,9 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="lib" path="libs/Minecraft_Mod.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/commons-lang-2.5.jar"/>
-	<classpathentry kind="lib" path="libs/h2-1.2.147.jar"/>
-	<classpathentry kind="lib" path="libs/log4j-1.2.16.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/commons-collections.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/commons-lang.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/h2.jar"/>
+	<classpathentry kind="lib" path="libs/log4j.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

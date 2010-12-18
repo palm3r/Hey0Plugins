@@ -1,30 +1,24 @@
 import java.io.*;
 import java.lang.reflect.*;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.*;
 import java.util.Map.*;
 import java.util.regex.*;
 import org.apache.commons.lang.*;
+import org.h2.jdbcx.JdbcDataSource;
 
 public class WatchDog extends PluginEx {
-
-	public static final String TABLE = "log";
 
 	private static final String WATCHDOG_INI = "watchdog.ini";
 	private static final Pattern pattern =
 		Pattern.compile("^\\s*([^\\/]+)\\/([^\\/]+)\\/([^-\\+=\\s]+)\\s*([-\\+]?=)\\s*(.*)$");
 
-	private static Map<Pair<Integer, Event>, Handler> handlers =
-		new HashMap<Pair<Integer, Event>, Handler>();
-	private static Map<String, String> attdef = new HashMap<String, String>();
-	private static Connection conn = null;
+	private static Map<Pair<Integer, Event>, Handler> handlers;
+	private static Map<String, String> attackerMap =
+		new HashMap<String, String>();
 
 	@SuppressWarnings("serial")
-	private Map<PluginLoader.Hook, PluginListener.Priority> hooks =
+	private final Map<PluginLoader.Hook, PluginListener.Priority> hooks =
 		new HashMap<PluginLoader.Hook, PluginListener.Priority>() {
 			{
 				put(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.MEDIUM);
@@ -45,14 +39,17 @@ public class WatchDog extends PluginEx {
 			}
 		};
 
-	private PluginListener listener = new PluginListener() {
+	private final PluginListener listener = new PluginListener() {
 
 		@Override
 		public boolean onBlockBreak(Player player, Block block) {
 			boolean denied = false;
 			Handler handler = getHandler(block.getType(), Event.DESTROY);
 			if (handler != null) {
-				denied = handler.execute(Event.DESTROY, player, block);
+				denied =
+					handler.execute(Event.DESTROY, player.getName(), block.getType(),
+						ItemNames.getName(block.getType()), new Location(block.getX(),
+							block.getY(), block.getZ()));
 			}
 			return denied;
 		}
@@ -62,7 +59,10 @@ public class WatchDog extends PluginEx {
 			boolean denied = false;
 			Handler handler = getHandler(block.getType(), Event.DESTROY);
 			if (handler != null) {
-				denied = handler.execute(Event.DESTROY, player, block);
+				denied =
+					handler.execute(Event.DESTROY, player.getName(), block.getType(),
+						ItemNames.getName(block.getType()), new Location(block.getX(),
+							block.getY(), block.getZ()));
 			}
 			return denied;
 		}
@@ -73,7 +73,14 @@ public class WatchDog extends PluginEx {
 			boolean denied = false;
 			Handler handler = getHandler(blockPlaced.getType(), Event.PLACE);
 			if (handler != null) {
-				denied = handler.execute(Event.PLACE, player, blockPlaced);
+				denied =
+					handler.execute(
+						Event.PLACE,
+						player.getName(),
+						blockPlaced.getType(),
+						ItemNames.getName(blockPlaced.getType()),
+						new Location(blockPlaced.getX(), blockPlaced.getY(),
+							blockPlaced.getZ()));
 			}
 			return denied;
 		}
@@ -85,7 +92,10 @@ public class WatchDog extends PluginEx {
 			if (block != null) {
 				Handler handler = getHandler(block.getType(), Event.USE);
 				if (handler != null) {
-					denied = handler.execute(Event.USE, player, block);
+					denied =
+						handler.execute(Event.USE, player.getName(), block.getType(),
+							ItemNames.getName(block.getType()), new Location(block.getX(),
+								block.getY(), block.getZ()));
 				}
 			}
 			return denied;
@@ -98,7 +108,10 @@ public class WatchDog extends PluginEx {
 			if (block != null) {
 				Handler handler = getHandler(block.getType(), Event.USE);
 				if (handler != null) {
-					denied = handler.execute(Event.USE, player, block);
+					denied =
+						handler.execute(Event.USE, player.getName(), block.getType(),
+							ItemNames.getName(block.getType()), new Location(block.getX(),
+								block.getY(), block.getZ()));
 				}
 			}
 			return denied;
@@ -109,7 +122,9 @@ public class WatchDog extends PluginEx {
 			boolean denied = false;
 			Handler handler = getHandler(item.getItemId(), Event.DROP);
 			if (handler != null) {
-				denied = handler.execute(Event.DROP, player, item);
+				denied =
+					handler.execute(Event.DROP, player.getName(), item.getItemId(),
+						ItemNames.getName(item.getItemId()), player.getLocation());
 			}
 			return denied;
 		}
@@ -119,7 +134,9 @@ public class WatchDog extends PluginEx {
 			boolean denied = false;
 			Handler handler = getHandler(item.getItemId(), Event.PICKUP);
 			if (handler != null) {
-				denied = handler.execute(Event.PICKUP, player, item);
+				denied =
+					handler.execute(Event.PICKUP, player.getName(), item.getItemId(),
+						ItemNames.getName(item.getItemId()), player.getLocation());
 			}
 			return denied;
 		}
@@ -130,7 +147,14 @@ public class WatchDog extends PluginEx {
 			boolean denied = false;
 			Handler handler = getHandler(item.getItemId(), Event.USE);
 			if (handler != null) {
-				denied = handler.execute(Event.USE, player, item);
+				denied =
+					handler.execute(
+						Event.USE,
+						player.getName(),
+						item.getItemId(),
+						ItemNames.getName(item.getItemId()),
+						new Location(blockClicked.getX(), blockClicked.getY(),
+							blockClicked.getZ()));
 			}
 			return denied;
 		}
@@ -139,7 +163,8 @@ public class WatchDog extends PluginEx {
 		public void onLogin(Player player) {
 			Handler handler = getHandler(-1, Event.LOGIN);
 			if (handler != null) {
-				handler.execute(Event.LOGIN, player);
+				handler.execute(Event.LOGIN, player.getName(), null, null,
+					player.getLocation());
 			}
 		}
 
@@ -147,7 +172,8 @@ public class WatchDog extends PluginEx {
 		public void onDisconnect(Player player) {
 			Handler handler = getHandler(-1, Event.LOGOUT);
 			if (handler != null) {
-				handler.execute(Event.LOGOUT, player);
+				handler.execute(Event.LOGOUT, player.getName(), null, null,
+					player.getLocation());
 			}
 		}
 
@@ -162,8 +188,10 @@ public class WatchDog extends PluginEx {
 					Player att = attacker.getPlayer();
 					Player def = defender.getPlayer();
 					if (att != null && def != null) {
-						attdef.put(def.getName(), att.getName());
-						denied = handler.execute(Event.ATTACK, att, def);
+						attackerMap.put(def.getName(), att.getName());
+						denied =
+							handler.execute(Event.ATTACK, att.getName(), null, def.getName(),
+								def.getLocation());
 					}
 				}
 			}
@@ -176,12 +204,11 @@ public class WatchDog extends PluginEx {
 			Handler handler = getHandler(-1, Event.KILL);
 			if (handler != null) {
 				String defName = player.getName();
-				if (newValue <= 0 && attdef.containsKey(defName)) {
-					String attName = attdef.remove(defName);
-					Player att = etc.getServer().getPlayer(attName);
-					if (att != null) {
-						denied = handler.execute(Event.KILL, att, player);
-					}
+				if (newValue <= 0 && attackerMap.containsKey(defName)) {
+					String attName = attackerMap.remove(defName);
+					denied =
+						handler.execute(Event.KILL, attName, null, player.getName(),
+							player.getLocation());
 				}
 			}
 			return denied;
@@ -192,7 +219,8 @@ public class WatchDog extends PluginEx {
 			boolean denied = false;
 			Handler handler = getHandler(-1, Event.TELEPORT);
 			if (handler != null) {
-				denied = handler.execute(Event.TELEPORT, player, null, to);
+				denied =
+					handler.execute(Event.TELEPORT, player.getName(), null, null, to);
 			}
 			return denied;
 		}
@@ -200,51 +228,39 @@ public class WatchDog extends PluginEx {
 	};
 
 	private static WatchDog plugin = null;
-	private Command wd = new WdCommand();
+	private Connection connection = null;
+	private final Command wd = new WdCommand();
 
 	public WatchDog() {
 		plugin = this;
 	}
 
+	@Override
 	protected void onEnable() {
 		try {
-			conn = openDatabase("log", "sa", "sa");
-			Statement stmt = conn.createStatement();
-			stmt.execute(String.format("CREATE TABLE IF NOT EXISTS %s"
-				+ " (id INT AUTO_INCREMENT PRIMARY KEY, time BIGINT NOT NULL"
-				+ ", event VARCHAR NOT NULL, player VARCHAR NOT NULL, target VARCHAR"
-				+ ", x DOUBLE NOT NULL, y DOUBLE NOT NULL, z DOUBLE NOT NULL"
-				+ ", denied BOOLEAN DEFAULT FALSE NOT NULL"
-				+ ", kicked BOOLEAN DEFAULT FALSE NOT NULL"
-				+ ", banned BOOLEAN DEFAULT FALSE NOT NULL)", TABLE));
-			stmt.execute(String.format(
-				"CREATE INDEX IF NOT EXISTS time_idx ON %s (time);", TABLE));
-			stmt.execute(String.format(
-				"CREATE INDEX IF NOT EXISTS event_idx ON %s (event, player, target);",
-				TABLE));
-			stmt.execute(String.format(
-				"CREATE INDEX IF NOT EXISTS location_idx ON %s (x, y, z);", TABLE));
-			stmt.execute(String.format(
-				"CREATE INDEX IF NOT EXISTS action_idx ON %s (denied, kicked, banned);",
-				TABLE));
-
-			Record.INSERT =
-				conn.prepareStatement(String.format("INSERT INTO %s"
-					+ " (time, event, player, target, x, y, z, denied, kicked, banned)"
-					+ " VALUES (?,?,?,?,?,?,?,?,?,?);", TABLE),
-					PreparedStatement.RETURN_GENERATED_KEYS);
-
+			Class.forName("org.h2.Driver");
+			String url =
+				String.format("jdbc:h2:file:%s",
+					getAbsolutePath("log").replace('\\', '/'));
+			JdbcDataSource ds = new JdbcDataSource();
+			ds.setURL(url);
+			// ds.setUser(name);
+			// ds.setPassword(name);
+			connection = ds.getConnection();
+			Table.connect(connection, Log.class);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		String watchDogIni = getRelativePath(WATCHDOG_INI);
 		try {
+			handlers = new LinkedHashMap<Pair<Integer, Event>, Handler>();
 			BufferedReader br = new BufferedReader(new FileReader(watchDogIni));
 			String line;
 			for (int index = 1; (line = br.readLine()) != null; ++index) {
-				if (line.trim().isEmpty() || line.trim().startsWith("#"))
+				if (line.trim().isEmpty() || line.trim().startsWith("#")) {
 					continue;
+				}
 				if (!parse(line)) {
 					warn("parse error: %s (%s:%d)", line, watchDogIni, index);
 				}
@@ -267,19 +283,20 @@ public class WatchDog extends PluginEx {
 		}
 	}
 
+	@Override
 	protected void onDisable() {
 		for (Entry<PluginLoader.Hook, PluginListener.Priority> entry : hooks.entrySet()) {
 			removeHook(entry.getKey());
 		}
 		removeCommand(wd);
 
-		if (conn != null) {
+		if (connection != null) {
 			try {
-				conn.close();
+				connection.close();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			conn = null;
+			connection = null;
 		}
 	}
 
@@ -363,42 +380,6 @@ public class WatchDog extends PluginEx {
 	public static Handler getHandler(int itemId, Event event) {
 		Pair<Integer, Event> key = Pair.create(itemId, event);
 		return handlers.containsKey(key) ? handlers.get(key) : null;
-	}
-
-	public static ResultSet query(String sql) throws SQLException {
-		Statement stmt = conn.createStatement();
-		// System.out.println("SQL: " + stmt.toString());
-		return stmt.executeQuery(sql);
-	}
-
-	public static String getColor(Record record) {
-		String color = Colors.Yellow;
-		if (record.denied)
-			color = Colors.Gold;
-		if (record.kicked)
-			color = Colors.Rose;
-		if (record.banned)
-			color = Colors.Red;
-		return color;
-	}
-
-	public static String getMessage(String player, String event, String target,
-		Location location, boolean denied, boolean kicked, boolean banned) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(player);
-		sb.append(" ");
-		sb.append(event + (target != null ? " " + target : ""));
-		// sb.append(String.format(" (%d,%d,%d)", x, y, z));
-		if (denied) {
-			sb.append(" DENIED");
-		}
-		if (kicked) {
-			sb.append(" KICKED");
-		}
-		if (banned) {
-			sb.append(" BANNED");
-		}
-		return sb.toString();
 	}
 
 }

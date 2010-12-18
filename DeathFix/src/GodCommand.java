@@ -2,7 +2,7 @@ import java.util.List;
 
 public class GodCommand extends Command {
 
-	private DeathFix plugin;
+	private final DeathFix plugin;
 
 	public GodCommand(DeathFix plugin) {
 		super(null, "God mode");
@@ -10,6 +10,7 @@ public class GodCommand extends Command {
 		this.plugin = plugin;
 	}
 
+	@Override
 	public boolean execute(Player player, String command, List<String> args) {
 		if (plugin.canBeGod(player)) {
 			plugin.toggleGod(player);

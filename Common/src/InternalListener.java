@@ -6,8 +6,9 @@ import java.util.*;
  * @author palm3r
  */
 final class InternalListener extends PluginListener {
-	private PluginEx plugin;
-	private PluginListener listener;
+
+	private final PluginEx plugin;
+	private final PluginListener listener;
 
 	public InternalListener(PluginEx plugin, PluginListener listener) {
 		this.plugin = plugin;

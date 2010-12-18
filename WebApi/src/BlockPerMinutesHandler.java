@@ -3,9 +3,10 @@ import java.util.*;
 
 public class BlockPerMinutesHandler implements WebApiHandler {
 
-	private Pair<Integer, Integer> count = new Pair<Integer, Integer>(0, 0);
+	private final Pair<Integer, Integer> count = Pair.create(0, 0);
 	private static Date lastInquiry = new Date();
 
+	@Override
 	public int call(PrintWriter pw, String[] args) throws IOException {
 		Date now = new Date();
 		double minutes = (now.getTime() - lastInquiry.getTime()) / 1000.0 / 60.0;

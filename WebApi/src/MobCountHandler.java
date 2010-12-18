@@ -3,8 +3,9 @@ import java.util.*;
 
 public class MobCountHandler implements WebApiHandler {
 
+	@Override
 	public int call(PrintWriter pw, String[] args) throws IOException {
-		Map<String, Integer> mobs = new TreeMap<String, Integer>();
+		Map<String, Integer> mobs = new HashMap<String, Integer>();
 		for (Mob m : etc.getServer().getMobList()) {
 			String name = m.getName();
 			int count = 1;

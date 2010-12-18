@@ -1,15 +1,15 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.regex.Pattern;
+import java.util.Map.*;
+import java.util.regex.*;
 
 import org.apache.commons.lang.StringUtils;
 
 public class ItemNames {
 
 	private static final String fileName = "items.txt";
-	private static Map<Integer, String> items = new HashMap<Integer, String>();
+	private static Map<Integer, String> items =
+		new LinkedHashMap<Integer, String>();
 
 	static {
 		try {
@@ -44,7 +44,7 @@ public class ItemNames {
 	public static Map<Integer, String> parse(String str) {
 		Pattern pattern =
 			Pattern.compile(str.replaceAll("\\*", ".*"), Pattern.CASE_INSENSITIVE);
-		Map<Integer, String> map = new HashMap<Integer, String>();
+		Map<Integer, String> map = new LinkedHashMap<Integer, String>();
 		for (Entry<Integer, String> entry : items.entrySet()) {
 			if (pattern.matcher(entry.getKey().toString()).matches()
 				|| pattern.matcher(entry.getValue()).matches()) {
