@@ -44,7 +44,7 @@ public class Handler {
 		String targetName, Location location) {
 		Log log = new Log();
 		log.time = System.currentTimeMillis();
-		log.action = action;
+		log.action = action.toString();
 		log.player = playerName;
 		log.targetId = targetId;
 		log.targetName = targetName;

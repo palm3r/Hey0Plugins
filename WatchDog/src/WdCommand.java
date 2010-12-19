@@ -96,16 +96,13 @@ public class WdCommand extends Command {
 			put("-s", new Option(true) {
 				@Override
 				public String parse(String value, double x, double y, double z) {
-					return String.format(
-						"(LOWER(srcId) LIKE LOWER('%%%1$s%%') OR LOWER(srcName) LIKE LOWER('%%%1$s%%'))",
-						value);
+					return String.format("LOWER(player) LIKE LOWER('%%%1$s%%')", value);
 				}
 			});
 			put("-S", new Option(true) {
 				@Override
 				public String parse(String value, double x, double y, double z) {
-					return String.format(
-						"(LOWER(srcId) NOT LIKE LOWER('%%%1$s%%') AND LOWER(srcName) NOT LIKE LOWER('%%%1$s%%'))",
+					return String.format("LOWER(player) NOT LIKE LOWER('%%%1$s%%')",
 						value);
 				}
 			});
@@ -138,7 +135,7 @@ public class WdCommand extends Command {
 	public boolean
 		execute(Player player, String command, final List<String> args) {
 		try {
-			String action = args.isEmpty() ? "help" : args.get(0).toLowerCase();
+			String action = args.isEmpty() ? "help" : args.remove(0).toLowerCase();
 			if (action.equals("help")) {
 				Chat.player(player,
 					(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
@@ -159,7 +156,7 @@ public class WdCommand extends Command {
 				Long x = null, y = null, z = null;
 
 				List<String> unprocessedArgs = new LinkedList<String>();
-				for (int index = 1; index < args.size(); ++index) {
+				for (int index = 0; index < args.size(); ++index) {
 					String a = args.get(index);
 					if (!a.startsWith("-")) {
 						unprocessedArgs.add(a);
@@ -272,12 +269,9 @@ public class WdCommand extends Command {
 						+ (Colors.LightGray + "%d log%s found (page %d/%d)"), count,
 					count > 1 ? "s" : "", page, max);
 
-				if (args.size() > 2) {
-					Chat.player(
-						player,
-						(Colors.LightGray + "option: ")
-							+ (Colors.White + StringUtils.join(args.subList(1, args.size()),
-								" ")));
+				if (!args.isEmpty()) {
+					Chat.player(player, (Colors.LightGray + "option: ")
+						+ (Colors.White + StringUtils.join(args, " ")));
 				}
 
 				for (Log log : list) {

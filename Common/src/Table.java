@@ -136,7 +136,7 @@ public class Table {
 					count > 0 ? String.format(" LIMIT %d", count) : "", index > 0
 						? String.format(" OFFSET %d", index) : "");
 			Statement stmt = table.getConnection().createStatement();
-			// System.out.println("SQL: " + sql);
+			System.out.println("SQL: " + sql);
 			ResultSet rs = stmt.executeQuery(sql);
 
 			list = new LinkedList<T>();
@@ -183,7 +183,7 @@ public class Table {
 					stmt.setObject(++index, field.get(obj));
 				}
 			}
-			// System.out.println("SQL: " + stmt.toString());
+			System.out.println("SQL: " + stmt.toString());
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			if (rs.next()) {
@@ -224,7 +224,7 @@ public class Table {
 			}
 			Field pk = table.getPrimaryKeyField();
 			stmt.setLong(++index, pk.getLong(obj));
-			// System.out.println("SQL: " + stmt.toString());
+			System.out.println("SQL: " + stmt.toString());
 			return stmt.executeUpdate();
 		}
 		return 0;
@@ -237,7 +237,7 @@ public class Table {
 			PreparedStatement stmt = table.getDeleteStatement();
 			Field pk = table.getPrimaryKeyField();
 			stmt.setLong(1, pk.getLong(obj));
-			// System.out.println("SQL: " + stmt.toString());
+			System.out.println("SQL: " + stmt.toString());
 			int count = stmt.executeUpdate();
 			for (Field field : obj.getClass().getDeclaredFields()) {
 				Column column = field.getAnnotation(Column.class);
@@ -318,7 +318,7 @@ public class Table {
 		String sql =
 			String.format("CREATE TABLE IF NOT EXISTS %s (%s);", getTableName(),
 				MapTools.join(columns, ", ", "%s %s"));
-		// System.out.println("SQL: " + sql);
+		System.out.println("SQL: " + sql);
 
 		Statement stmt = getConnection().createStatement();
 		stmt.execute(sql);
@@ -329,7 +329,7 @@ public class Table {
 			sql =
 				String.format("CREATE INDEX IF NOT EXISTS %s ON %s (%s);", indexName,
 					getTableName(), StringUtils.join(columnNames, ", "));
-			// System.out.println("SQL: " + sql);
+			System.out.println("SQL: " + sql);
 			stmt.execute(sql);
 		}
 
@@ -339,7 +339,7 @@ public class Table {
 			sql =
 				String.format("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s);",
 					uniqueName, getTableName(), StringUtils.join(columnNames, ", "));
-			// System.out.println("SQL: " + sql);
+			System.out.println("SQL: " + sql);
 			stmt.execute(sql);
 		}
 

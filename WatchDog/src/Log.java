@@ -10,7 +10,7 @@ public class Log {
 	public Long time;
 
 	@Table.Column(notNull = true)
-	public Event action;
+	public String action;
 
 	@Table.Column(notNull = true)
 	public String player;
@@ -54,7 +54,7 @@ public class Log {
 		StringBuilder sb = new StringBuilder();
 		sb.append(player);
 		sb.append(" ");
-		sb.append(action.toString() + (targetName != null ? " " + targetName : ""));
+		sb.append(action + (targetName != null ? " " + targetName : ""));
 		// sb.append(String.format(" (%d,%d,%d)", x, y, z));
 		if (denied) {
 			sb.append(" DENIED");
