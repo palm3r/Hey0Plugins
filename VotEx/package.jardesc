@@ -12,7 +12,7 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
         <file path="/VotEx/README.md"/>
-        <javaElement handleIdentifier="=VotEx/src"/>
         <javaElement handleIdentifier="=Common/src"/>
+        <javaElement handleIdentifier="=VotEx/src"/>
     </selectedElements>
 </jardesc>

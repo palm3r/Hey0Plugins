@@ -21,7 +21,7 @@ public final class Chat {
 		player.sendMessage(String.format(format, args));
 	}
 
-	public static void player(Player[] players, String format, Object... args) {
+	public static void players(Player[] players, String format, Object... args) {
 		String msg = String.format(format, args);
 		for (Player player : players) {
 			player.sendMessage(msg);

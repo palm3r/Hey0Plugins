@@ -18,8 +18,7 @@ public class VotEx extends PluginEx {
 		vote = new VoteCommand(this);
 		yes = new YesCommand(this);
 		no = new NoCommand(this);
-
-		// addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.MEDIUM);
+		addCommand(vote, yes, no);
 	}
 
 	public boolean isVoting() {
@@ -59,12 +58,6 @@ public class VotEx extends PluginEx {
 	@Override
 	protected void onEnable() {
 		expires = Integer.valueOf(getProperty(EXPIRES_KEY, EXPIRES_DEFAULT));
-		addCommand(vote, yes, no);
-	}
-
-	@Override
-	protected void onDisable() {
-		removeCommand(vote, yes, no);
 	}
 
 }

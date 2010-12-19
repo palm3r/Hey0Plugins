@@ -17,28 +17,6 @@ public class WatchDog extends PluginEx {
 	private static Map<String, String> attackerMap =
 		new HashMap<String, String>();
 
-	@SuppressWarnings("serial")
-	private final Map<PluginLoader.Hook, PluginListener.Priority> hooks =
-		new HashMap<PluginLoader.Hook, PluginListener.Priority>() {
-			{
-				put(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.BLOCK_DESTROYED, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.BLOCK_PLACE, PluginListener.Priority.MEDIUM);
-				// put(PluginLoader.Hook.COMPLEX_BLOCK_CHANGE,
-				// PluginListener.Priority.MEDIUM);
-				// put(PluginLoader.Hook.COMPLEX_BLOCK_SEND,
-				// PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.ITEM_DROP, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.ITEM_PICK_UP, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.ITEM_USE, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.LOGIN, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.DISCONNECT, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.DAMAGE, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.HEALTH_CHANGE, PluginListener.Priority.MEDIUM);
-				put(PluginLoader.Hook.TELEPORT, PluginListener.Priority.MEDIUM);
-			}
-		};
-
 	private final PluginListener listener = new PluginListener() {
 
 		@Override
@@ -229,9 +207,35 @@ public class WatchDog extends PluginEx {
 
 	private static WatchDog plugin = null;
 	private Connection connection = null;
-	private final Command wd = new WdCommand();
 
 	public WatchDog() {
+		addHook(PluginLoader.Hook.BLOCK_BROKEN, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.BLOCK_DESTROYED, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.BLOCK_PLACE, PluginListener.Priority.MEDIUM,
+			listener);
+		// addHook(PluginLoader.Hook.COMPLEX_BLOCK_CHANGE,
+		// PluginListener.Priority.MEDIUM, listener);
+		// addHook(PluginLoader.Hook.COMPLEX_BLOCK_SEND,
+		// PluginListener.Priority.MEDIUM, listener);
+		addHook(PluginLoader.Hook.ITEM_DROP, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.ITEM_PICK_UP, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.ITEM_USE, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.LOGIN, PluginListener.Priority.MEDIUM, listener);
+		addHook(PluginLoader.Hook.DISCONNECT, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.DAMAGE, PluginListener.Priority.MEDIUM, listener);
+		addHook(PluginLoader.Hook.HEALTH_CHANGE, PluginListener.Priority.MEDIUM,
+			listener);
+		addHook(PluginLoader.Hook.TELEPORT, PluginListener.Priority.MEDIUM,
+			listener);
+
+		addCommand(new WdCommand());
+
 		plugin = this;
 	}
 
@@ -241,7 +245,7 @@ public class WatchDog extends PluginEx {
 			Class.forName("org.h2.Driver");
 			String url =
 				String.format("jdbc:h2:file:%s",
-					getAbsolutePath("log").replace('\\', '/'));
+					getRelatedPath("log").replace('\\', '/'));
 			JdbcDataSource ds = new JdbcDataSource();
 			ds.setURL(url);
 			// ds.setUser(name);
@@ -252,7 +256,7 @@ public class WatchDog extends PluginEx {
 			e.printStackTrace();
 		}
 
-		String watchDogIni = getRelativePath(WATCHDOG_INI);
+		String watchDogIni = getRelatedPath(WATCHDOG_INI);
 		try {
 			handlers = new LinkedHashMap<Pair<Integer, Event>, Handler>();
 			BufferedReader br = new BufferedReader(new FileReader(watchDogIni));
@@ -276,20 +280,10 @@ public class WatchDog extends PluginEx {
 				}
 			}
 		}
-
-		addCommand(wd);
-		for (Entry<PluginLoader.Hook, PluginListener.Priority> entry : hooks.entrySet()) {
-			addHook(entry.getKey(), entry.getValue(), listener);
-		}
 	}
 
 	@Override
 	protected void onDisable() {
-		for (Entry<PluginLoader.Hook, PluginListener.Priority> entry : hooks.entrySet()) {
-			removeHook(entry.getKey());
-		}
-		removeCommand(wd);
-
 		if (connection != null) {
 			try {
 				connection.close();

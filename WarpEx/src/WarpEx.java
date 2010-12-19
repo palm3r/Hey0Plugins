@@ -12,29 +12,14 @@ public class WarpEx extends PluginEx {
 	public static final String HIDDEN_PREFIX_KEY = "hidden-prefix";
 	public static final String HIDDEN_PREFIX_DEFAULT = "@";
 
-	public static final String WARP_ALIAS_KEY = "warp-alias";
-	public static final String WARP_ALIAS_DEFAULT = "/go";
-
-	public static final String SETWARP_ALIAS_KEY = "setwarp-alias";
-	public static final String SETWARP_ALIAS_DEFAULT = "/sw";
-
-	public static final String REMOVEWARP_ALIAS_KEY = "removewarp-alias";
-	public static final String REMOVEWARP_ALIAS_DEFAULT = "/rw";
-
-	public static final String LISTWARPS_ALIAS_KEY = "listwarps-alias";
-	public static final String LISTWARPS_ALIAS_DEFAULT = "/lw";
-
-	public static final String LISTNS_ALIAS_KEY = "listns-alias";
-	public static final String LISTNS_ALIAS_DEFAULT = "/ln";
-
 	private Map<String, Location> warps = new IgnoreCaseMap<Location>();
 	private Namespace defaultNamespace;
 	private String hiddenPrefix;
-	private String[] warpAlias, setwarpAlias, removewarpAlias, listwarpsAlias,
-			listnsAlias;
-	private Command warp, setwarp, removewarp, listwarps, listns;
 
 	public WarpEx() {
+		addCommand(new WarpCommand(this, "/go"), new SetWarpCommand(this, "/sw"),
+			new RemoveWarpCommand(this, "/rw"), new ListWarpsCommand(this, "/lw"),
+			new ListNsCommand(this, "/ln"));
 	}
 
 	public Pair<String, String> normalizeKey(Player player, String key) {
@@ -107,33 +92,8 @@ public class WarpEx extends PluginEx {
 			Enum.valueOf(Namespace.class, StringUtils.capitalize(getProperty(
 				DEFAULT_NAMESPACE_KEY, DEFAULT_NAMESPACE_DEFAULT)));
 		hiddenPrefix = getProperty(HIDDEN_PREFIX_KEY, HIDDEN_PREFIX_DEFAULT);
-		warpAlias =
-			StringUtils.split(getProperty(WARP_ALIAS_KEY, WARP_ALIAS_DEFAULT), ", ");
-		setwarpAlias =
-			StringUtils.split(getProperty(SETWARP_ALIAS_KEY, SETWARP_ALIAS_DEFAULT),
-				", ");
-		removewarpAlias =
-			StringUtils.split(
-				getProperty(REMOVEWARP_ALIAS_KEY, REMOVEWARP_ALIAS_DEFAULT), ", ");
-		listwarpsAlias =
-			StringUtils.split(
-				getProperty(LISTWARPS_ALIAS_KEY, LISTWARPS_ALIAS_DEFAULT), ", ");
-		listnsAlias =
-			StringUtils.split(getProperty(LISTNS_ALIAS_KEY, LISTNS_ALIAS_DEFAULT),
-				", ");
-
-		addCommand(warp = new WarpCommand(this, warpAlias), setwarp =
-			new SetWarpCommand(this, setwarpAlias), removewarp =
-			new RemoveWarpCommand(this, removewarpAlias), listwarps =
-			new ListWarpsCommand(this, listwarpsAlias), listns =
-			new ListNsCommand(this, listnsAlias));
 
 		loadWarps();
-	}
-
-	@Override
-	protected void onDisable() {
-		removeCommand(warp, setwarp, removewarp, listwarps, listns);
 	}
 
 	private void loadWarps() {

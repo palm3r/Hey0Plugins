@@ -41,32 +41,22 @@ public abstract class PluginEx extends Plugin {
 	private static final String LOG_LEVEL_DEFAULT = "info";
 
 	private final Logger logger;
-	private final Map<PluginLoader.Hook, HookInfo> hooks;
-	private final Set<Command> commands;
-	private Map<String, String> config;
+	private final Map<PluginLoader.Hook, HookListener> hooks =
+		new HashMap<PluginLoader.Hook, HookListener>();
+	private final Set<Command> commands = new HashSet<Command>();
+	private Map<String, String> config = new HashMap<String, String>();
 
 	protected PluginEx() {
-		setName(this.getClass().getSimpleName());
-
+		setName(this.getClass().getName());
 		logger = Logger.getLogger(getName());
 		logger.addAppender(new ConsoleAppender(new PatternLayout(LOG_PATTERN),
 			"System.out"));
-
-		hooks = new HashMap<PluginLoader.Hook, HookInfo>();
-		commands = new HashSet<Command>();
-		config = new HashMap<String, String>();
-
-		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.MEDIUM);
+		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.MEDIUM, null);
 	}
 
 	//
 	// HOOKS
 	//
-
-	private final void addHook(PluginLoader.Hook hook,
-		PluginListener.Priority priority) {
-		addHook(hook, priority, null);
-	}
 
 	/**
 	 * Add hook
@@ -77,12 +67,10 @@ public abstract class PluginEx extends Plugin {
 	 */
 	public final void addHook(PluginLoader.Hook hook,
 		PluginListener.Priority priority, PluginListener listener) {
-		HookInfo info =
-			new HookInfo(new InternalListener(this, listener), priority);
-		hooks.put(hook, info);
-		if (isEnabled()) {
-			info.enable(hook, this);
-		}
+		HookListener hl =
+			new HookListener(new WrappedListener(this, listener), priority);
+		hooks.put(hook, hl);
+		hl.enable(hook, this);
 	}
 
 	/**
@@ -90,12 +78,11 @@ public abstract class PluginEx extends Plugin {
 	 * 
 	 * @param hook
 	 */
+	@Deprecated
 	public final void removeHook(PluginLoader.Hook hook) {
 		if (hooks.containsKey(hook)) {
-			HookInfo info = hooks.remove(hook);
-			if (isEnabled()) {
-				info.disable();
-			}
+			HookListener hl = hooks.remove(hook);
+			hl.disable();
 		}
 	}
 
@@ -118,9 +105,7 @@ public abstract class PluginEx extends Plugin {
 	public final void addCommand(Command... commands) {
 		for (Command c : commands) {
 			this.commands.add(c);
-			if (isEnabled()) {
-				c.enable();
-			}
+			c.enable();
 		}
 	}
 
@@ -129,6 +114,7 @@ public abstract class PluginEx extends Plugin {
 	 * 
 	 * @param commands
 	 */
+	@Deprecated
 	public final void removeCommand(Command... commands) {
 		for (Command c : commands) {
 			this.commands.remove(c);
@@ -181,36 +167,36 @@ public abstract class PluginEx extends Plugin {
 		config.put(key, value);
 	}
 
-	public final String getRelativePath(String fileName) {
+	public final String getRelatedPath(String fileName) {
 		return getName() + File.separator + fileName;
 	}
 
+	@Deprecated
 	public final String getAbsolutePath(String fileName) {
 		return new File(".").getAbsoluteFile().getParent() + File.separator
-			+ getRelativePath(fileName);
+			+ getRelatedPath(fileName);
 	}
 
 	@Deprecated
 	public final <T> Collection<T> load(Collection<T> collection,
 		String fileName, Converter<String, T> converter) throws IOException {
-		return CollectionTools.load(collection, getRelativePath(fileName),
-			converter);
+		return CollectionTools.load(collection, getRelatedPath(fileName), converter);
 	}
 
 	@Deprecated
 	public final <T> void save(Collection<T> collection, String fileName,
 		Converter<T, String> converter) throws IOException {
-		CollectionTools.save(collection, getRelativePath(fileName), converter);
+		CollectionTools.save(collection, getRelatedPath(fileName), converter);
 	}
 
 	public final <K, V> Map<K, V> load(Map<K, V> map, String fileName,
 		Converter<String, Pair<K, V>> converter) throws IOException {
-		return MapTools.load(map, getRelativePath(fileName), converter);
+		return MapTools.load(map, getRelatedPath(fileName), converter);
 	}
 
 	public final <K, V> void save(Map<K, V> map, String fileName,
 		Converter<Pair<K, V>, String> converter) throws IOException {
-		MapTools.save(map, getRelativePath(fileName), converter);
+		MapTools.save(map, getRelatedPath(fileName), converter);
 	}
 
 	//
@@ -321,10 +307,10 @@ public abstract class PluginEx extends Plugin {
 			c.enable();
 		}
 		// Enable hooks
-		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
+		for (Map.Entry<PluginLoader.Hook, HookListener> entry : hooks.entrySet()) {
 			PluginLoader.Hook hook = entry.getKey();
-			HookInfo info = entry.getValue();
-			info.enable(hook, this);
+			HookListener hl = entry.getValue();
+			hl.enable(hook, this);
 		}
 		info("enabled");
 	}
@@ -332,7 +318,7 @@ public abstract class PluginEx extends Plugin {
 	@Override
 	public final void disable() {
 		// Disable hooks
-		for (Map.Entry<PluginLoader.Hook, HookInfo> entry : hooks.entrySet()) {
+		for (Map.Entry<PluginLoader.Hook, HookListener> entry : hooks.entrySet()) {
 			entry.getValue().disable();
 		}
 		// Disable commands

@@ -135,7 +135,8 @@ public class WdCommand extends Command {
 	}
 
 	@Override
-	public boolean execute(Player player, String command, List<String> args) {
+	public boolean
+		execute(Player player, String command, final List<String> args) {
 		try {
 			String action = args.isEmpty() ? "help" : args.get(0).toLowerCase();
 			if (action.equals("help")) {
@@ -264,26 +265,30 @@ public class WdCommand extends Command {
 				int count = Table.count(Log.class, c);
 				List<Log> list = Table.select(Log.class, (page - 1) * line, line, c);
 
-				if (list.isEmpty()) {
-					Chat.player(player,
-						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-							+ (Colors.LightGray + "Log not found"));
-				} else {
-					int max = (int) Math.ceil((double) count / (double) line);
-					Chat.player(player,
-						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-							+ (Colors.LightGray + "%d log%s found (page %d/%d)"), count,
-						count > 1 ? "s" : "", page, max);
-					for (Log log : list) {
-						StringBuilder sb = new StringBuilder();
-						sb.append("[" + log.id + "]");
-						sb.append(log.getColor());
-						sb.append(" ");
-						sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", log.time));
-						sb.append(" ");
-						sb.append(log.getMessage());
-						Chat.player(player, sb.toString());
-					}
+				int max =
+					line > 0 ? (int) Math.ceil((double) count / (double) line) : 0;
+				Chat.player(player,
+					(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
+						+ (Colors.LightGray + "%d log%s found (page %d/%d)"), count,
+					count > 1 ? "s" : "", page, max);
+
+				if (args.size() > 2) {
+					Chat.player(
+						player,
+						(Colors.LightGray + "option: ")
+							+ (Colors.White + StringUtils.join(args.subList(1, args.size()),
+								" ")));
+				}
+
+				for (Log log : list) {
+					StringBuilder sb = new StringBuilder();
+					sb.append("[" + log.id + "]");
+					sb.append(log.getColor());
+					sb.append(" ");
+					sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", log.time));
+					sb.append(" ");
+					sb.append(log.getMessage());
+					Chat.player(player, sb.toString());
 				}
 			} else if (action.equals("go") || action.equals("kick")
 				|| action.equals("ban")) {

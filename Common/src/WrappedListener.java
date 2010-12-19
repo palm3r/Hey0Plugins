@@ -1,16 +1,11 @@
 import java.util.*;
 
-/**
- * Internal listener
- * 
- * @author palm3r
- */
-final class InternalListener extends PluginListener {
+final class WrappedListener extends PluginListener {
 
 	private final PluginEx plugin;
 	private final PluginListener listener;
 
-	public InternalListener(PluginEx plugin, PluginListener listener) {
+	public WrappedListener(PluginEx plugin, PluginListener listener) {
 		this.plugin = plugin;
 		this.listener = listener;
 	}
@@ -62,7 +57,7 @@ final class InternalListener extends PluginListener {
 		for (Command c : plugin.getCommands()) {
 			if (c.match(command) && c.canUseCommand(player)) {
 				plugin.debug("%s is corresponding to %s", command, c);
-				return c.execute(player, command, args2);
+				return c.execute(player, command, new LinkedList<String>(args2));
 			}
 		}
 		plugin.debug("%s is not corresponding to any command", command);

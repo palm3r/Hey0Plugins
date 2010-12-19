@@ -30,7 +30,7 @@ public abstract class Command {
 	private List<String> alias;
 	private final String params, description;
 	private String require;
-	private boolean active;
+	private boolean enabled;
 
 	/**
 	 * @param params
@@ -47,7 +47,7 @@ public abstract class Command {
 					subClass.length() - thisClass.length()) : subClass).toLowerCase();
 		this.params = params;
 		this.description = description;
-		active = false;
+		enabled = false;
 	}
 
 	/**
@@ -136,8 +136,8 @@ public abstract class Command {
 		return require;
 	}
 
-	public boolean isActive() {
-		return active;
+	public boolean isEnabled() {
+		return enabled;
 	}
 
 	public boolean canUseCommand(Player player) {
@@ -146,13 +146,17 @@ public abstract class Command {
 	}
 
 	public final void enable() {
-		etc.getInstance().addCommand(command, getHelp(true, true));
-		active = true;
+		if (!enabled) {
+			etc.getInstance().addCommand(command, getHelp(true, true));
+			enabled = true;
+		}
 	}
 
 	public final void disable() {
-		etc.getInstance().removeCommand(command);
-		active = false;
+		if (enabled) {
+			etc.getInstance().removeCommand(command);
+			enabled = false;
+		}
 	}
 
 	public final boolean match(String command) {
@@ -180,7 +184,7 @@ public abstract class Command {
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this).append(command).append(alias).append(
-			params).append(description).append(require).append(active).toString();
+			params).append(description).append(require).append(enabled).toString();
 	}
 
 }

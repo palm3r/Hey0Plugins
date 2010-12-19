@@ -54,7 +54,7 @@ public class Log {
 		StringBuilder sb = new StringBuilder();
 		sb.append(player);
 		sb.append(" ");
-		sb.append(action + (targetName != null ? " " + targetName : ""));
+		sb.append(action.toString() + (targetName != null ? " " + targetName : ""));
 		// sb.append(String.format(" (%d,%d,%d)", x, y, z));
 		if (denied) {
 			sb.append(" DENIED");

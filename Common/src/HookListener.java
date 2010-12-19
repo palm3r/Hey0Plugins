@@ -1,17 +1,16 @@
-/**
- * Hook info
- * 
- * @author palm3r
- */
-final class HookInfo {
+final class HookListener {
 
 	private final PluginListener listener;
 	private final PluginListener.Priority priority;
 	private PluginRegisteredListener registered;
 
-	public HookInfo(PluginListener listener, PluginListener.Priority priority) {
+	public HookListener(PluginListener listener, PluginListener.Priority priority) {
 		this.listener = listener;
 		this.priority = priority;
+	}
+
+	public boolean isEnabled() {
+		return registered != null;
 	}
 
 	public void enable(PluginLoader.Hook hook, Plugin plugin) {
