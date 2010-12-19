@@ -30,7 +30,7 @@ public class WdCommand extends Command {
 			put("-A", new Option(true) {
 				@Override
 				public String parse(String value, double x, double y, double z) {
-					return String.format("action = UPPER('%s')", value);
+					return String.format("action NOT LIKE UPPER('%%%s%%')", value);
 				}
 			});
 			put("-b", new Option(false) {
@@ -105,7 +105,7 @@ public class WdCommand extends Command {
 				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format(
-						"(LOWER(srcId) = LOWER('%1$s') OR LOWER(srcName) = LOWER('%1$s'))",
+						"(LOWER(srcId) NOT LIKE LOWER('%%%1$s%%') AND LOWER(srcName) NOT LIKE LOWER('%%%1$s%%'))",
 						value);
 				}
 			});
@@ -121,7 +121,7 @@ public class WdCommand extends Command {
 				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format(
-						"(LOWER(targetId) = LOWER('%1$s') OR LOWER(targetName) = LOWER('%1$s'))",
+						"(LOWER(targetId) NOT LIKE LOWER('%%%1$s%%') AND LOWER(targetName) NOT LIKE LOWER('%%%1$s%%'))",
 						value);
 				}
 			});
@@ -168,7 +168,7 @@ public class WdCommand extends Command {
 							(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 								+ (Colors.LightGray + "Log options"));
 						Chat.player(player, (Colors.White + "-a [action] ")
-							+ (Colors.LightGray + "Search by action (exact: ")
+							+ (Colors.LightGray + "Search by action (inverted: ")
 							+ (Colors.White + "-A") + (Colors.LightGray + ")"));
 						Chat.player(
 							player,
@@ -177,10 +177,10 @@ public class WdCommand extends Command {
 							player,
 							(Colors.LightGray + "(Player actions: login, logout, attack, kill, teleport)"));
 						Chat.player(player, (Colors.White + "-s [player] ")
-							+ (Colors.LightGray + "Search by player (exact: ")
+							+ (Colors.LightGray + "Search by player (inverted: ")
 							+ (Colors.White + "-S") + (Colors.LightGray + ")"));
 						Chat.player(player, (Colors.White + "-t [target] ")
-							+ (Colors.LightGray + "Search by target (exact: ")
+							+ (Colors.LightGray + "Search by target (inverted: ")
 							+ (Colors.White + "-T") + (Colors.LightGray + ")"));
 						Chat.player(player, (Colors.White + "-l [x,y,z] ")
 							+ (Colors.LightGray + "Search by location"));
@@ -234,7 +234,7 @@ public class WdCommand extends Command {
 					z = Math.round(player.getZ());
 				}
 
-				Map<String, String> conditionMap = new LinkedHashMap<String, String>();
+				List<String> conditions = new LinkedList<String>();
 				for (int index = 0; index < unprocessedArgs.size(); ++index) {
 					String key = unprocessedArgs.get(index);
 					if (!options.containsKey(key)) {
@@ -256,14 +256,13 @@ public class WdCommand extends Command {
 								return true;
 							}
 						}
-						conditionMap.put(key, opt.parse(value, x, y, z));
+						conditions.add(opt.parse(value, x, y, z));
 					}
 				}
 
-				String[] conditions = conditionMap.values().toArray(new String[0]);
-				int count = Table.count(Log.class, conditions);
-				List<Log> list =
-					Table.select(Log.class, (page - 1) * line, line, conditions);
+				String[] c = conditions.toArray(new String[0]);
+				int count = Table.count(Log.class, c);
+				List<Log> list = Table.select(Log.class, (page - 1) * line, line, c);
 
 				if (list.isEmpty()) {
 					Chat.player(player,

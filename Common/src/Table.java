@@ -163,9 +163,8 @@ public class Table {
 			Field pk = table.getPrimaryKeyField();
 			List<T> list =
 				select(clazz, String.format("%s = '%s'", pk.getName(), key.toString()));
-			if (list != null && !list.isEmpty()) {
-				list.get(0);
-			}
+			if (list != null && !list.isEmpty())
+				return list.get(0);
 		}
 		return null;
 	}
