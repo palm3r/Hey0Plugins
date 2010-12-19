@@ -2,7 +2,7 @@ import java.util.*;
 
 import org.apache.commons.lang.*;
 
-public class WdCommand extends Command {
+public class WatchDogCommand extends Command {
 
 	private abstract class Option {
 		private final boolean value;
@@ -125,10 +125,11 @@ public class WdCommand extends Command {
 		}
 	};
 
-	public WdCommand() {
+	public WatchDogCommand() {
 		super("[help|log|go|kick|ban]", WatchDog.class.getSimpleName()
 			+ " commands");
 		setRequire("/watchdog");
+		setAlias("/wd");
 	}
 
 	@Override
@@ -141,16 +142,16 @@ public class WdCommand extends Command {
 					(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 						+ (Colors.LightGray + "Commands"));
 				Chat.player(player, (Colors.LightGray + "Log: ")
-					+ (Colors.White + "/wd log <options> ")
-					+ (Colors.LightGray + "(see '/wd log -h' for details)"));
+					+ (Colors.White + "/watchdog (/wd) log <options> ")
+					+ (Colors.LightGray + "(see '/watchdog (/wd) log -h' for details)"));
 				Chat.player(player, (Colors.LightGray + "Warp: ")
-					+ (Colors.White + "/wd go [id]"));
+					+ (Colors.White + "/watchdog (/wd) go [id]"));
 				Chat.player(player, (Colors.LightGray + "Kick: ")
-					+ (Colors.White + "/wd kick [id]"));
+					+ (Colors.White + "/watchdog (/wd) kick [id]"));
 				Chat.player(player, (Colors.LightGray + "Ban: ")
-					+ (Colors.White + "/wd ban [id]"));
+					+ (Colors.White + "/watchdog (/wd) ban [id]"));
 				// Chat.toPlayer(player, (Colors.LightGray + "Config: ") + (Colors.White
-				// + "/wd config [expression]"));
+				// + "/watchdog (/wd) config [expression]"));
 			} else if (action.equals("log")) {
 				int page = 1, line = 8;
 				Long x = null, y = null, z = null;
@@ -286,7 +287,7 @@ public class WdCommand extends Command {
 				}
 			} else if (action.equals("go") || action.equals("kick")
 				|| action.equals("ban")) {
-				Long id = Long.valueOf(args.get(1));
+				Long id = Long.valueOf(args.get(0));
 				Log log = Table.get(Log.class, id);
 				if (log == null) {
 					Chat.player(player,
