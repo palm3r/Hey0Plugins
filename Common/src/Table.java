@@ -126,7 +126,7 @@ public class Table {
 	public static <T extends Object> List<T> select(Class<T> clazz, int index,
 		int count, String... conditions) throws SQLException,
 		InstantiationException, IllegalAccessException, ClassNotFoundException {
-		List<T> list = null;
+		List<T> list = new LinkedList<T>();
 		Table table = getTable(clazz);
 		if (table != null) {
 			String where = StringUtils.join(conditions, " AND ");
@@ -138,8 +138,6 @@ public class Table {
 			Statement stmt = table.getConnection().createStatement();
 			System.out.println("SQL: " + sql);
 			ResultSet rs = stmt.executeQuery(sql);
-
-			list = new LinkedList<T>();
 			while (rs.next()) {
 				T obj = clazz.newInstance();
 				for (Field field : clazz.getDeclaredFields()) {

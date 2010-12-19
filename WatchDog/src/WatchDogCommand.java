@@ -275,15 +275,17 @@ public class WatchDogCommand extends Command {
 						+ (Colors.White + StringUtils.join(args, " ")));
 				}
 
-				for (Log log : list) {
-					StringBuilder sb = new StringBuilder();
-					sb.append("[" + log.id + "]");
-					sb.append(log.getColor());
-					sb.append(" ");
-					sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", log.time));
-					sb.append(" ");
-					sb.append(log.getMessage());
-					Chat.player(player, sb.toString());
+				if (list != null) {
+					for (Log log : list) {
+						StringBuilder sb = new StringBuilder();
+						sb.append("[" + log.id + "]");
+						sb.append(log.getColor());
+						sb.append(" ");
+						sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", log.time));
+						sb.append(" ");
+						sb.append(log.getMessage());
+						Chat.player(player, sb.toString());
+					}
 				}
 			} else if (action.equals("go") || action.equals("kick")
 				|| action.equals("ban")) {

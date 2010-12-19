@@ -4,8 +4,8 @@ public class Actions {
 		if (player != null) {
 			player.kick(String.format("You have been kicked (reason: %s%s)", action,
 				target != null ? " " + target : ""));
-			Chat.broadcast(Colors.Rose + "%s was kicked (reason: %s%s)", player,
-				action, target != null ? " " + target : "");
+			Chat.broadcast(Colors.Rose + "%s was kicked (reason: %s%s)",
+				player.getName(), action, target != null ? " " + target : "");
 		}
 	}
 

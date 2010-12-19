@@ -171,7 +171,6 @@ public abstract class PluginEx extends Plugin {
 		return getName() + File.separator + fileName;
 	}
 
-	@Deprecated
 	public final String getAbsolutePath(String fileName) {
 		return new File(".").getAbsoluteFile().getParent() + File.separator
 			+ getRelatedPath(fileName);
