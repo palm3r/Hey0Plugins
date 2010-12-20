@@ -16,10 +16,10 @@ public class Log {
 	public String player;
 
 	@Table.Column()
-	public Integer targetId;
+	public String target_id;
 
 	@Table.Column()
-	public String targetName;
+	public String target_name;
 
 	@Table.Column(notNull = true)
 	public Double x, y, z;
@@ -54,7 +54,7 @@ public class Log {
 		StringBuilder sb = new StringBuilder();
 		sb.append(player);
 		sb.append(" ");
-		sb.append(action + (targetName != null ? " " + targetName : ""));
+		sb.append(action + (target_name != null ? " " + target_name : ""));
 		// sb.append(String.format(" (%d,%d,%d)", x, y, z));
 		if (denied) {
 			sb.append(" DENIED");
@@ -78,20 +78,20 @@ public class Log {
 			return false;
 		Log r = (Log) obj;
 		return new EqualsBuilder().append(action, r.action).append(player, r.player).append(
-			targetId, r.targetId).append(targetName, r.targetName).append(x, r.x).append(
+			target_id, r.target_id).append(target_name, r.target_name).append(x, r.x).append(
 			y, r.y).append(z, r.z).isEquals();
 	}
 
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().append(action).append(player).append(targetId).append(
-			targetName).append(x).append(y).append(z).hashCode();
+		return new HashCodeBuilder().append(action).append(player).append(target_id).append(
+			target_name).append(x).append(y).append(z).hashCode();
 	}
 
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this).append(id).append(new Date(time)).append(
-			action).append(player).append(targetId).append(targetName).append(x).append(
+			action).append(player).append(target_id).append(target_name).append(x).append(
 			y).append(z).append(denied).append(kicked).append(banned).toString();
 	}
 

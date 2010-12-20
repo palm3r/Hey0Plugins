@@ -46,8 +46,8 @@ public class Handler {
 		log.time = System.currentTimeMillis();
 		log.action = action.toString();
 		log.player = playerName;
-		log.targetId = targetId;
-		log.targetName = targetName;
+		log.target_id = targetId != null ? targetId.toString() : null;
+		log.target_name = targetName;
 		log.x = location.x;
 		log.y = location.y;
 		log.z = location.z;

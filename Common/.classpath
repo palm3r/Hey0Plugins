@@ -6,6 +6,6 @@
 	<classpathentry exported="true" kind="lib" path="libs/commons-collections.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/commons-lang.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/h2.jar"/>
-	<classpathentry kind="lib" path="libs/log4j.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/log4j.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

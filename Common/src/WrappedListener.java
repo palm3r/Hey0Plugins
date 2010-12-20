@@ -49,18 +49,17 @@ final class WrappedListener extends PluginListener {
 	@Override
 	public boolean onCommand(Player player, String[] args) {
 		String command = args[0];
-		plugin.debug("onCommand: %s", command);
+		// plugin.debug("onCommand: %s", command);
 		List<String> args2 = new LinkedList<String>();
 		for (int i = 1; i < args.length; ++i) {
 			args2.add(args[i].trim());
 		}
 		for (Command c : plugin.getCommands()) {
-			if (c.match(command) && c.canUseCommand(player)) {
-				plugin.debug("%s is corresponding to %s", command, c);
-				return c.execute(player, command, new LinkedList<String>(args2));
-			}
+			if (c.match(command) && c.canUseCommand(player))
+				// plugin.debug("%s is corresponding to %s", command, c);
+				return c.execute(player, command, args2);
 		}
-		plugin.debug("%s is not corresponding to any command", command);
+		// plugin.debug("%s is not corresponding to any command", command);
 		return listener != null ? listener.onCommand(player, args) : false;
 	}
 

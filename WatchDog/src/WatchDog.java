@@ -237,7 +237,6 @@ public class WatchDog extends PluginEx {
 
 		@Override
 		public boolean onHealthChange(Player player, int oldValue, int newValue) {
-			// updateLastActionTime(player);
 			boolean denied = false;
 			Handler handler = getHandler(-1, Event.KILL);
 			if (handler != null) {
@@ -337,7 +336,7 @@ public class WatchDog extends PluginEx {
 			// ds.setUser(name);
 			// ds.setPassword(name);
 			connection = ds.getConnection();
-			Table.connect(connection, Log.class);
+			Table.connect(connection, Log.class, getLogger());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

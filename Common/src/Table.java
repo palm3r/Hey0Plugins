@@ -3,11 +3,14 @@ import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import org.apache.commons.lang.*;
+import org.apache.log4j.Logger;
 
 public class Table {
 
 	@Retention(RetentionPolicy.RUNTIME)
 	public @interface Column {
+		String name() default "";
+
 		String type() default "";
 
 		boolean notNull() default false;
@@ -63,25 +66,26 @@ public class Table {
 
 	private static Map<Class<?>, Table> tables = new HashMap<Class<?>, Table>();
 
-	private static <T extends Object> Table getTable(Class<T> clazz)
+	public static <T extends Object> Table getInstance(Class<T> clazz)
 		throws SQLException, ClassNotFoundException {
 		return tables.containsKey(clazz) ? tables.get(clazz) : null;
 	}
 
 	public static <T extends Object> Connection connect(Connection connection,
-		Class<T> clazz) throws SQLException, ClassNotFoundException {
-		Table table = getTable(clazz);
+		Class<T> clazz, Logger logger) throws SQLException, ClassNotFoundException {
+		Table table = getInstance(clazz);
 		Connection old = table != null ? table.getConnection() : null;
-		tables.put(clazz, new Table(connection, clazz.getName(), clazz));
+		String tableName = clazz.getName().toLowerCase().replace('.', '_');
+		tables.put(clazz, new Table(connection, tableName, clazz, logger));
 		return old;
 	}
 
 	public static <T extends Object> Connection connect(Connection connection,
-		String tableName, Class<T> clazz) throws SQLException,
+		String tableName, Class<T> clazz, Logger logger) throws SQLException,
 		ClassNotFoundException {
-		Table table = getTable(clazz);
+		Table table = getInstance(clazz);
 		Connection old = table != null ? table.getConnection() : null;
-		tables.put(clazz, new Table(connection, tableName, clazz));
+		tables.put(clazz, new Table(connection, tableName, clazz, logger));
 		return old;
 	}
 
@@ -96,14 +100,14 @@ public class Table {
 
 	public static <T extends Object> int count(Class<T> clazz,
 		String... conditions) throws SQLException, ClassNotFoundException {
-		Table table = getTable(clazz);
+		Table table = getInstance(clazz);
 		if (table != null) {
 			String where = StringUtils.join(conditions, " AND ");
 			String sql =
 				String.format("SELECT COUNT(*) FROM %s%s;", table.getTableName(),
 					where.isEmpty() ? "" : " WHERE " + where);
 			Statement stmt = table.getConnection().createStatement();
-			// System.out.println("SQL: " + sql);
+			table.getLogger().debug("SQL: " + sql);
 			ResultSet rs = stmt.executeQuery(sql);
 			if (rs.next())
 				return rs.getInt(1);
@@ -127,7 +131,7 @@ public class Table {
 		int count, String... conditions) throws SQLException,
 		InstantiationException, IllegalAccessException, ClassNotFoundException {
 		List<T> list = new LinkedList<T>();
-		Table table = getTable(clazz);
+		Table table = getInstance(clazz);
 		if (table != null) {
 			String where = StringUtils.join(conditions, " AND ");
 			String sql =
@@ -136,7 +140,7 @@ public class Table {
 					count > 0 ? String.format(" LIMIT %d", count) : "", index > 0
 						? String.format(" OFFSET %d", index) : "");
 			Statement stmt = table.getConnection().createStatement();
-			System.out.println("SQL: " + sql);
+			table.getLogger().debug("SQL: " + sql);
 			ResultSet rs = stmt.executeQuery(sql);
 			while (rs.next()) {
 				T obj = clazz.newInstance();
@@ -156,7 +160,7 @@ public class Table {
 	public static <T extends Object> T get(Class<T> clazz, Object key)
 		throws SQLException, InstantiationException, IllegalAccessException,
 		ClassNotFoundException {
-		Table table = getTable(clazz);
+		Table table = getInstance(clazz);
 		if (table != null) {
 			Field pk = table.getPrimaryKeyField();
 			List<T> list =
@@ -170,7 +174,7 @@ public class Table {
 	public static <T extends Object> boolean insert(T obj)
 		throws IllegalArgumentException, SQLException, IllegalAccessException,
 		ClassNotFoundException {
-		Table table = getTable(obj.getClass());
+		Table table = getInstance(obj.getClass());
 		if (table != null) {
 			PreparedStatement stmt = table.getInsertStatement();
 			int index = 0;
@@ -181,7 +185,7 @@ public class Table {
 					stmt.setObject(++index, field.get(obj));
 				}
 			}
-			System.out.println("SQL: " + stmt.toString());
+			table.getLogger().debug("SQL: " + stmt.toString());
 			stmt.executeUpdate();
 			ResultSet rs = stmt.getGeneratedKeys();
 			if (rs.next()) {
@@ -206,7 +210,7 @@ public class Table {
 	public static <T extends Object> int update(T obj, String... fields)
 		throws IllegalArgumentException, SQLException, IllegalAccessException,
 		SecurityException, NoSuchFieldException, ClassNotFoundException {
-		Table table = getTable(obj.getClass());
+		Table table = getInstance(obj.getClass());
 		if (table != null) {
 			PreparedStatement stmt = table.getUpdateStatement();
 			int index = 0;
@@ -222,7 +226,7 @@ public class Table {
 			}
 			Field pk = table.getPrimaryKeyField();
 			stmt.setLong(++index, pk.getLong(obj));
-			System.out.println("SQL: " + stmt.toString());
+			table.getLogger().debug("SQL: " + stmt.toString());
 			return stmt.executeUpdate();
 		}
 		return 0;
@@ -230,12 +234,12 @@ public class Table {
 
 	public static <T extends Object> int delete(T obj) throws SQLException,
 		IllegalArgumentException, IllegalAccessException, ClassNotFoundException {
-		Table table = getTable(obj.getClass());
+		Table table = getInstance(obj.getClass());
 		if (table != null) {
 			PreparedStatement stmt = table.getDeleteStatement();
 			Field pk = table.getPrimaryKeyField();
 			stmt.setLong(1, pk.getLong(obj));
-			System.out.println("SQL: " + stmt.toString());
+			table.getLogger().debug("SQL: " + stmt.toString());
 			int count = stmt.executeUpdate();
 			for (Field field : obj.getClass().getDeclaredFields()) {
 				Column column = field.getAnnotation(Column.class);
@@ -250,16 +254,18 @@ public class Table {
 	}
 
 	private Connection connection;
+	private Logger logger;
 	private String tableName;
 	private PreparedStatement insertStatement;
 	private PreparedStatement updateStatement;
 	private PreparedStatement deleteStatement;
 	private Field primaryKeyField;
 
-	private Table(Connection connection, String tableName, Class<?> clazz)
-		throws SQLException, ClassNotFoundException {
+	private Table(Connection connection, String tableName, Class<?> clazz,
+		Logger logger) throws SQLException, ClassNotFoundException {
 		this.connection = connection;
 		this.tableName = tableName;
+		this.logger = logger;
 
 		Map<String, String> columns = new LinkedHashMap<String, String>();
 		Map<String, Set<String>> indices = new LinkedHashMap<String, Set<String>>();
@@ -268,7 +274,8 @@ public class Table {
 		for (Field field : clazz.getDeclaredFields()) {
 			Column column = field.getAnnotation(Column.class);
 			if (column != null) {
-				String fieldName = field.getName();
+				String fieldName =
+					column.name().isEmpty() ? field.getName() : column.name();
 				String fieldType =
 					field.getType().isPrimitive()
 						? primitiveMap.get(field.getType()).getName()
@@ -316,7 +323,7 @@ public class Table {
 		String sql =
 			String.format("CREATE TABLE IF NOT EXISTS %s (%s);", getTableName(),
 				MapTools.join(columns, ", ", "%s %s"));
-		System.out.println("SQL: " + sql);
+		getLogger().debug("SQL: " + sql);
 
 		Statement stmt = getConnection().createStatement();
 		stmt.execute(sql);
@@ -327,7 +334,7 @@ public class Table {
 			sql =
 				String.format("CREATE INDEX IF NOT EXISTS %s ON %s (%s);", indexName,
 					getTableName(), StringUtils.join(columnNames, ", "));
-			System.out.println("SQL: " + sql);
+			getLogger().debug("SQL: " + sql);
 			stmt.execute(sql);
 		}
 
@@ -337,7 +344,7 @@ public class Table {
 			sql =
 				String.format("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s);",
 					uniqueName, getTableName(), StringUtils.join(columnNames, ", "));
-			System.out.println("SQL: " + sql);
+			getLogger().debug("SQL: " + sql);
 			stmt.execute(sql);
 		}
 
@@ -369,27 +376,31 @@ public class Table {
 					primaryKeyField.getName()));
 	}
 
-	private Connection getConnection() {
+	public Connection getConnection() {
 		return connection;
 	}
 
-	private String getTableName() {
+	public Logger getLogger() {
+		return logger;
+	}
+
+	public String getTableName() {
 		return tableName;
 	}
 
-	private PreparedStatement getInsertStatement() {
+	public PreparedStatement getInsertStatement() {
 		return insertStatement;
 	}
 
-	private PreparedStatement getUpdateStatement() {
+	public PreparedStatement getUpdateStatement() {
 		return updateStatement;
 	}
 
-	private PreparedStatement getDeleteStatement() {
+	public PreparedStatement getDeleteStatement() {
 		return deleteStatement;
 	}
 
-	private Field getPrimaryKeyField() {
+	public Field getPrimaryKeyField() {
 		return primaryKeyField;
 	}
 

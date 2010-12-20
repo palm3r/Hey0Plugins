@@ -65,6 +65,8 @@ public class DeathFix extends PluginEx {
 
 		@Override
 		public boolean onHealthChange(Player player, int oldValue, int newValue) {
+			if (newValue < oldValue && godPlayers.contains(player.getName()))
+				return true;
 			if (newValue <= 0) {
 				if (death.containsKey(player.getName())) {
 					Pair<String, Location> p = death.remove(player.getName());
@@ -108,6 +110,14 @@ public class DeathFix extends PluginEx {
 			getProperty(GOD_GROUPS_KEY, GOD_GROUPS_DEFAULT), ", ")) {
 			godGroups.add(group);
 		}
+		for (Player player : etc.getServer().getPlayerList()) {
+			for (String group : godGroups) {
+				if (player.isInGroup(group) && !isGod(player)) {
+					toggleGod(player);
+					break;
+				}
+			}
+		}
 		godOnLogin =
 			Boolean.valueOf(getProperty(GOD_ON_LOGIN_KEY, GOD_ON_LOGIN_DEFAULT));
 
@@ -122,7 +132,7 @@ public class DeathFix extends PluginEx {
 								String first = s[0].trim().toLowerCase();
 								String second = s[1].trim();
 								Pair<String, String> p = Pair.create(first, second);
-								debug("%s => %s", line, p);
+								// debug("%s => %s", line, p);
 								return p;
 							} catch (Exception e) {
 							}
@@ -137,7 +147,7 @@ public class DeathFix extends PluginEx {
 						@Override
 						public String convert(Pair<String, String> entry) {
 							String line = entry.first.toLowerCase() + " = " + entry.second;
-							debug("%s => %s", entry, line);
+							// debug("%s => %s", entry, line);
 							return line;
 						}
 					});

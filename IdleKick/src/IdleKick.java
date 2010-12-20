@@ -125,6 +125,10 @@ public class IdleKick extends PluginEx {
 						if (entry.getValue() < limit) {
 							Player player = etc.getServer().getPlayer(entry.getKey());
 							if (player != null) {
+								for (String group : idleIgnoreGroups) {
+									if (player.isInGroup(group))
+										return;
+								}
 								player.kick(String.format("You have been kicked (reason: IDLE)"));
 							}
 						}

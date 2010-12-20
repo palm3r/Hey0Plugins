@@ -77,6 +77,14 @@ public class WatchDogCommand extends Command {
 						"x = %s AND y = %s AND z = %s", loc[0], loc[1], loc[2]) : null;
 				}
 			});
+			put("-L", new Option(true) {
+				@Override
+				public String parse(String value, double x, double y, double z) {
+					String[] loc = StringUtils.split(value, ", ");
+					return loc.length == 3 ? String.format(
+						"x != %s OR y != %s OR z != %s", loc[0], loc[1], loc[2]) : null;
+				}
+			});
 			put("-r", new Option(true) {
 				@Override
 				public String parse(String value, double x, double y, double z) {
@@ -110,7 +118,7 @@ public class WatchDogCommand extends Command {
 				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format(
-						"(LOWER(targetId) LIKE LOWER('%%%1$s%%') OR LOWER(targetName) LIKE LOWER('%%%1$s%%'))",
+						"(target_id = '%1$s' OR LOWER(target_name) LIKE LOWER('%%%1$s%%'))",
 						value);
 				}
 			});
@@ -118,7 +126,7 @@ public class WatchDogCommand extends Command {
 				@Override
 				public String parse(String value, double x, double y, double z) {
 					return String.format(
-						"(LOWER(targetId) NOT LIKE LOWER('%%%1$s%%') AND LOWER(targetName) NOT LIKE LOWER('%%%1$s%%'))",
+						"(target_id != '%1$s' AND LOWER(target_name) NOT LIKE LOWER('%%%1$s%%'))",
 						value);
 				}
 			});
@@ -136,23 +144,25 @@ public class WatchDogCommand extends Command {
 	public boolean
 		execute(Player player, String command, final List<String> args) {
 		try {
-			String action = args.isEmpty() ? "help" : args.remove(0).toLowerCase();
-			if (action.equals("help")) {
+			String mode = args.isEmpty() ? "help" : args.remove(0).toLowerCase();
+			if (mode.equals("help")) {
 				Chat.player(player,
 					(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 						+ (Colors.LightGray + "Commands"));
 				Chat.player(player, (Colors.LightGray + "Log: ")
-					+ (Colors.White + "/watchdog (/wd) log <options> ")
-					+ (Colors.LightGray + "(see '/watchdog (/wd) log -h' for details)"));
+					+ (Colors.White + "/wd log <options> ")
+					+ (Colors.LightGray + "(see '/wd log -h' for details)"));
 				Chat.player(player, (Colors.LightGray + "Warp: ")
-					+ (Colors.White + "/watchdog (/wd) go [id]"));
+					+ (Colors.White + "/wd go [id]"));
 				Chat.player(player, (Colors.LightGray + "Kick: ")
-					+ (Colors.White + "/watchdog (/wd) kick [id]"));
+					+ (Colors.White + "/wd kick [id]"));
 				Chat.player(player, (Colors.LightGray + "Ban: ")
-					+ (Colors.White + "/watchdog (/wd) ban [id]"));
-				// Chat.toPlayer(player, (Colors.LightGray + "Config: ") + (Colors.White
-				// + "/watchdog (/wd) config [expression]"));
-			} else if (action.equals("log")) {
+					+ (Colors.White + "/wd ban [id]"));
+				/*
+				 * Chat.player(player, (Colors.LightGray + "Config: ")
+				 * + (Colors.White + "/wd config [expression]"));
+				 */
+			} else if (mode.equals("l") || mode.equals("log")) {
 				int page = 1, line = 8;
 				Long x = null, y = null, z = null;
 
@@ -179,10 +189,11 @@ public class WatchDogCommand extends Command {
 							+ (Colors.LightGray + "Search by player (inverted: ")
 							+ (Colors.White + "-S") + (Colors.LightGray + ")"));
 						Chat.player(player, (Colors.White + "-t [target] ")
-							+ (Colors.LightGray + "Search by target (inverted: ")
+							+ (Colors.LightGray + "Search by target id or name (inverted: ")
 							+ (Colors.White + "-T") + (Colors.LightGray + ")"));
 						Chat.player(player, (Colors.White + "-l [x,y,z] ")
-							+ (Colors.LightGray + "Search by location"));
+							+ (Colors.LightGray + "Search by location (inverted: ")
+							+ (Colors.White + "-L") + (Colors.LightGray + ")"));
 						Chat.player(player, (Colors.White + "-r [range] ")
 							+ (Colors.LightGray + "In range only (inverted: ")
 							+ (Colors.White + "-R") + (Colors.LightGray + ")"));
@@ -220,7 +231,7 @@ public class WatchDogCommand extends Command {
 							Chat.player(player,
 								(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
 									+ (Colors.White + value)
-									+ (Colors.LightGray + " is not unrecognizable as location"));
+									+ (Colors.LightGray + " is unrecognizable as location"));
 							return true;
 						}
 					} else {
@@ -275,50 +286,54 @@ public class WatchDogCommand extends Command {
 						+ (Colors.White + StringUtils.join(args, " ")));
 				}
 
-				if (list != null) {
-					for (Log log : list) {
-						StringBuilder sb = new StringBuilder();
-						sb.append("[" + log.id + "]");
-						sb.append(log.getColor());
-						sb.append(" ");
-						sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", log.time));
-						sb.append(" ");
-						sb.append(log.getMessage());
-						Chat.player(player, sb.toString());
-					}
+				for (Log log : list) {
+					StringBuilder sb = new StringBuilder();
+					sb.append("[" + log.id + "]");
+					sb.append(log.getColor());
+					sb.append(" ");
+					sb.append(String.format("%1$tm/%1$td %1$tH:%1$tM", log.time));
+					sb.append(" ");
+					sb.append(log.getMessage());
+					Chat.player(player, sb.toString());
 				}
-			} else if (action.equals("go") || action.equals("kick")
-				|| action.equals("ban")) {
+			} else if (mode.equalsIgnoreCase("go") || mode.equalsIgnoreCase("kick")
+				|| mode.equalsIgnoreCase("ban")) {
 				Long id = Long.valueOf(args.get(0));
 				Log log = Table.get(Log.class, id);
 				if (log == null) {
 					Chat.player(player,
 						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-							+ (Colors.LightGray + "Log (id = %d) is not found"), id);
+							+ (Colors.LightGray + "Log (id %d) is not found"), id);
 					return true;
 				}
-				if (action.equals("go")) {
+				if (mode.equalsIgnoreCase("go")) {
 					player.teleportTo(new Location(log.x, log.y, log.z));
 				}
-				if (action.equals("kick")) {
+				if (mode.equalsIgnoreCase("kick")) {
 					Actions.kick(log);
 				}
-				if (action.equals("ban")) {
+				if (mode.equalsIgnoreCase("ban")) {
 					Actions.ban(log);
 				}
-				/*
-				 * } else if (action.equals("config")) {
-				 * String expr = StringUtils.join(args.subList(1, args.size()), " ");
-				 * if (!WatchDog.parse(expr)) {
-				 * Chat.toPlayer(player,
-				 * (Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-				 * + (Colors.LightGray + "Parse error"));
-				 * }
-				 */
+			} else if (mode.equals("config")) {
+				if (args.isEmpty()) {
+					Chat.player(player,
+						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
+							+ (Colors.LightGray + "Config mode requires an expression"));
+				} else {
+					String expr = StringUtils.join(args, " ");
+					boolean error = !WatchDog.parse(expr);
+					Chat.player(player,
+						(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
+							+ (Colors.LightGray + "\"") + (Colors.White + expr)
+							+ (Colors.LightGray + "\"") + (Colors.White + " [")
+							+ (error ? (Colors.Rose + "FAILED") : (Colors.LightGreen + "OK"))
+							+ (Colors.White + "]"));
+				}
 			} else {
 				Chat.player(player,
 					(Colors.Rose + WatchDog.class.getSimpleName() + ": ")
-						+ (Colors.LightGray + "'%s' is not supported"), action);
+						+ (Colors.LightGray + "'%s' is not supported"), mode);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

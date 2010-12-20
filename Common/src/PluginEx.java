@@ -202,6 +202,10 @@ public abstract class PluginEx extends Plugin {
 	// LOGGING
 	//
 
+	public final Logger getLogger() {
+		return logger;
+	}
+
 	public final void fatal(String format, Object... args) {
 		log(Level.FATAL, format, args);
 	}
@@ -227,8 +231,8 @@ public abstract class PluginEx extends Plugin {
 	}
 
 	public final void log(Level level, String format, Object... args) {
-		if (logger.isEnabledFor(level)) {
-			logger.log(level, String.format(format, args));
+		if (getLogger().isEnabledFor(level)) {
+			getLogger().log(level, String.format(format, args));
 		}
 	}
 
@@ -274,7 +278,7 @@ public abstract class PluginEx extends Plugin {
 			Level level =
 				(Level) Level.class.getField(
 					getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(null);
-			logger.setLevel(level);
+			getLogger().setLevel(level);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -282,8 +286,9 @@ public abstract class PluginEx extends Plugin {
 			Boolean.valueOf(getProperty(LOG_ENABLE_KEY, LOG_ENABLE_DEFAULT));
 		if (enabled) {
 			try {
-				logger.addAppender(new DailyRollingFileAppender(new PatternLayout(
-					LOG_PATTERN), "logs/" + getName() + ".log", ".yyyy-MM-dd"));
+				getLogger().addAppender(
+					new DailyRollingFileAppender(new PatternLayout(LOG_PATTERN), "logs/"
+						+ getName() + ".log", ".yyyy-MM-dd"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

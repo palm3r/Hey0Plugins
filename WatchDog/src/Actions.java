@@ -11,14 +11,14 @@ public class Actions {
 
 	public static void kick(Log log) {
 		Player player = etc.getServer().getPlayer(log.player);
-		kick(player, log.action, log.targetName);
+		kick(player, log.action, log.target_name);
 	}
 
 	public static void ban(Log log) {
 		kick(log);
 		etc.getServer().ban(log.player);
 		Chat.broadcast(Colors.Rose + "%s was banned (reason: %s%s)", log.player,
-			log.action, log.targetName != null ? " " + log.targetName : "");
+			log.action, log.target_name != null ? " " + log.target_name : "");
 	}
 
 }
