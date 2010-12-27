@@ -36,8 +36,8 @@ public class WatchDogHandler {
 		return new ToStringBuilder(this).append("props", props).toString();
 	}
 
-	public boolean execute(boolean doActions, WatchDogEvent action, Player player, Integer targetId, String targetName,
-		Location location) {
+	public boolean execute(boolean doActions, WatchDogEvent action, Player player, Integer targetId,
+		String targetName, Location location) {
 		boolean denied = test("deny", player);
 		boolean kicked = test("kick", player);
 		boolean banned = test("ban", player);
@@ -52,8 +52,9 @@ public class WatchDogHandler {
 
 			boolean logged = test("log", player);
 			Log log =
-				logged ? DataSet.add(Log.class, System.currentTimeMillis(), action.toString(), player.getName(),
-					targetId.toString(), targetName, location.x, location.y, location.z, denied, kicked, banned) : null;
+				logged ? DataSet.add(Log.class, System.currentTimeMillis(), action.toString(),
+					player.getName(), targetId != null ? targetId.toString() : null, targetName != null
+						? targetName : null, location.x, location.y, location.z, denied, kicked, banned) : null;
 
 			String color = log != null ? log.getColor() : Log.getColor(denied, kicked, banned);
 			String msg =
@@ -61,8 +62,8 @@ public class WatchDogHandler {
 					"%1$s%2$s%3$s",
 					log != null ? "[" + log.getId() + "] " : "",
 					color,
-					log != null ? log.getMessage() : Log.getMessage(player.getName(), action.toString(), targetName, denied,
-						kicked, banned));
+					log != null ? log.getMessage() : Log.getMessage(player.getName(), action.toString(),
+						targetName, denied, kicked, banned));
 			for (Player p : etc.getServer().getPlayerList()) {
 				if (test("notify", p)) {
 					Chat.player(false, p, msg);

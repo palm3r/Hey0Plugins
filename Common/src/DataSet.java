@@ -8,32 +8,34 @@ import org.apache.log4j.*;
 public class DataSet<T extends DataRow> {
 
 	@SuppressWarnings("serial")
-	private static Map<Class<?>, Pair<Integer, String>> types = new HashMap<Class<?>, Pair<Integer, String>>() {
-		{
-			put(java.lang.Integer.class, Pair.create(Types.INTEGER, "INT"));
-			put(java.lang.Boolean.class, Pair.create(Types.BOOLEAN, "BOOLEAN"));
-			put(java.lang.Byte.class, Pair.create(Types.TINYINT, "TINYINT"));
-			put(java.lang.Short.class, Pair.create(Types.SMALLINT, "SMALLINT"));
-			put(java.lang.Long.class, Pair.create(Types.BIGINT, "BIGINT"));
-			put(java.math.BigDecimal.class, Pair.create(Types.DECIMAL, "DECIMAL"));
-			put(java.lang.Double.class, Pair.create(Types.DOUBLE, "DOUBLE"));
-			put(java.lang.Float.class, Pair.create(Types.REAL, "REAL"));
-			put(java.sql.Time.class, Pair.create(Types.TIME, "TIME"));
-			put(java.sql.Date.class, Pair.create(Types.DATE, "DATE"));
-			put(java.sql.Timestamp.class, Pair.create(Types.TIMESTAMP, "TIMESTAMP"));
-			put(java.lang.Byte[].class, Pair.create(Types.BINARY, "BINARY"));
-			put(java.lang.String.class, Pair.create(Types.VARCHAR, "VARCHAR"));
-			put(java.sql.Blob.class, Pair.create(Types.BLOB, "BLOB"));
-			put(java.sql.Clob.class, Pair.create(Types.CLOB, "CLOB"));
-			put(java.lang.Object[].class, Pair.create(Types.ARRAY, "ARRAY"));
-			put(java.lang.Object.class, Pair.create(Types.OTHER, "OTHER"));
-		}
-	};
+	private static Map<Class<?>, Pair<Integer, String>> types =
+		new HashMap<Class<?>, Pair<Integer, String>>() {
+			{
+				put(java.lang.Integer.class, Pair.create(Types.INTEGER, "INT"));
+				put(java.lang.Boolean.class, Pair.create(Types.BOOLEAN, "BOOLEAN"));
+				put(java.lang.Byte.class, Pair.create(Types.TINYINT, "TINYINT"));
+				put(java.lang.Short.class, Pair.create(Types.SMALLINT, "SMALLINT"));
+				put(java.lang.Long.class, Pair.create(Types.BIGINT, "BIGINT"));
+				put(java.math.BigDecimal.class, Pair.create(Types.DECIMAL, "DECIMAL"));
+				put(java.lang.Double.class, Pair.create(Types.DOUBLE, "DOUBLE"));
+				put(java.lang.Float.class, Pair.create(Types.REAL, "REAL"));
+				put(java.sql.Time.class, Pair.create(Types.TIME, "TIME"));
+				put(java.sql.Date.class, Pair.create(Types.DATE, "DATE"));
+				put(java.sql.Timestamp.class, Pair.create(Types.TIMESTAMP, "TIMESTAMP"));
+				put(java.lang.Byte[].class, Pair.create(Types.BINARY, "BINARY"));
+				put(java.lang.String.class, Pair.create(Types.VARCHAR, "VARCHAR"));
+				put(java.sql.Blob.class, Pair.create(Types.BLOB, "BLOB"));
+				put(java.sql.Clob.class, Pair.create(Types.CLOB, "CLOB"));
+				put(java.lang.Object[].class, Pair.create(Types.ARRAY, "ARRAY"));
+				put(java.lang.Object.class, Pair.create(Types.OTHER, "OTHER"));
+			}
+		};
 
 	private static Map<Class<? extends DataRow>, DataSet<? extends DataRow>> map =
 		new HashMap<Class<? extends DataRow>, DataSet<? extends DataRow>>();
 
-	public static <T extends DataRow> boolean connect(Connection connection, Class<T> clazz, Logger logger) {
+	public static <T extends DataRow> boolean connect(Connection connection, Class<T> clazz,
+		Logger logger) {
 		boolean connected = false;
 		disconnect(clazz);
 		try {
@@ -138,8 +140,8 @@ public class DataSet<T extends DataRow> {
 	private final String name;
 	private final PreparedStatement get, insert, update, delete;
 
-	public DataSet(Connection connection, Class<T> clazz, Logger logger) throws SQLException, SecurityException,
-		NoSuchFieldException {
+	public DataSet(Connection connection, Class<T> clazz, Logger logger) throws SQLException,
+		SecurityException, NoSuchFieldException {
 		this.connection = connection;
 		this.clazz = clazz;
 		this.logger = logger;
@@ -155,19 +157,22 @@ public class DataSet<T extends DataRow> {
 			DataRow.Column column = field.getAnnotation(DataRow.Column.class);
 			if (column != null) {
 
-				Pair<Integer, String> type = types.containsKey(field.getType()) ? types.get(field.getType()) : null;
+				Pair<Integer, String> type =
+					types.containsKey(field.getType()) ? types.get(field.getType()) : null;
 				columns.put(field.getName(), type.second);
 
 				String index = column.index();
 				if (!index.isEmpty()) {
-					List<String> list = indices.containsKey(index) ? indices.get(index) : new LinkedList<String>();
+					List<String> list =
+						indices.containsKey(index) ? indices.get(index) : new LinkedList<String>();
 					list.add(field.getName());
 					indices.put(index, list);
 				}
 
 				String unique = column.unique();
 				if (!unique.isEmpty()) {
-					List<String> list = uniques.containsKey(unique) ? uniques.get(unique) : new LinkedList<String>();
+					List<String> list =
+						uniques.containsKey(unique) ? uniques.get(unique) : new LinkedList<String>();
 					list.add(field.getName());
 					uniques.put(unique, list);
 				}
@@ -197,7 +202,9 @@ public class DataSet<T extends DataRow> {
 		for (Map.Entry<String, List<String>> entry : indices.entrySet()) {
 			String index = entry.getKey();
 			List<String> list = entry.getValue();
-			sql = String.format("CREATE INDEX IF NOT EXISTS %s ON %s (%s);", index, name, StringUtils.join(list, ", "));
+			sql =
+				String.format("CREATE INDEX IF NOT EXISTS %s ON %s (%s);", index, name,
+					StringUtils.join(list, ", "));
 			logger.debug("SQL: " + sql);
 			connection.createStatement().execute(sql);
 		}
@@ -207,7 +214,8 @@ public class DataSet<T extends DataRow> {
 			String unique = entry.getKey();
 			List<String> list = entry.getValue();
 			sql =
-				String.format("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s);", unique, name, StringUtils.join(list, ", "));
+				String.format("CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s);", unique, name,
+					StringUtils.join(list, ", "));
 			logger.debug("SQL: " + sql);
 			connection.createStatement().execute(sql);
 		}
@@ -225,7 +233,8 @@ public class DataSet<T extends DataRow> {
 		this.insert = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
 		// UPDATE
-		sql = String.format("UPDATE %s SET %s WHERE id = ?;", name, MapTools.join(columns, ", ", "%s = ?"));
+		sql =
+			String.format("UPDATE %s SET %s WHERE id = ?;", name, MapTools.join(columns, ", ", "%s = ?"));
 		logger.debug("SQL: " + sql);
 		this.update = connection.prepareStatement(sql);
 
@@ -261,7 +270,8 @@ public class DataSet<T extends DataRow> {
 		int count = 0;
 		try {
 			String where = StringUtils.join(conditions, " AND ");
-			String sql = String.format("SELECT COUNT(*) FROM %s%s", name, where.isEmpty() ? "" : " WHERE " + where);
+			String sql =
+				String.format("SELECT COUNT(*) FROM %s%s", name, where.isEmpty() ? "" : " WHERE " + where);
 			PreparedStatement stmt = getConnection().prepareStatement(sql);
 			if (execute(stmt)) {
 				ResultSet rs = stmt.getResultSet();
@@ -284,9 +294,9 @@ public class DataSet<T extends DataRow> {
 		try {
 			String where = StringUtils.join(conditions, " AND ");
 			String sql =
-				String.format("SELECT * FROM %s%s%s%s%s;", name, where.isEmpty() ? "" : " WHERE " + where, sort != null
-					&& !sort.isEmpty() ? " ORDER BY " + sort : "", count > 0 ? " LIMIT " + count : "", offset > 0 ? " OFFSET "
-					+ offset : "");
+				String.format("SELECT * FROM %s%s%s%s%s;", name, where.isEmpty() ? "" : " WHERE " + where,
+					sort != null && !sort.isEmpty() ? " ORDER BY " + sort : "", count > 0 ? " LIMIT " + count
+						: "", offset > 0 ? " OFFSET " + offset : "");
 			PreparedStatement stmt = getConnection().prepareStatement(sql);
 			if (execute(stmt)) {
 				ResultSet rs = stmt.getResultSet();
@@ -339,7 +349,8 @@ public class DataSet<T extends DataRow> {
 			T obj = clazz.newInstance();
 			for (int index = 0; index < fields.size(); ++index) {
 				Field field = fields.get(index);
-				logger.debug(String.format("_add: set field \"%s\" = %s", field.getName(), values[index].toString()));
+				// logger.debug(String.format("_add: set field \"%s\" = %s",
+				// field.getName(), values[index].toString()));
 				field.set(obj, values[index]);
 			}
 			int index = 0;
@@ -431,8 +442,8 @@ public class DataSet<T extends DataRow> {
 
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this).append(connection).append(clazz).append(fields).append(name).append(insert).append(
-			update).append(delete).toString();
+		return new ToStringBuilder(this).append(connection).append(clazz).append(fields).append(name).append(
+			insert).append(update).append(delete).toString();
 	}
 
 }
