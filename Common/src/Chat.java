@@ -1,70 +1,109 @@
 import java.util.*;
+
 import org.apache.commons.collections.*;
 
 public final class Chat {
 
-	public static void broadcast(String format, Object... args) {
+	private static Map<String, String> lastMessages =
+		new HashMap<String, String>();
+
+	public static void
+		broadcast(boolean redundant, String format, Object... args) {
 		String msg = String.format(format, args);
 		for (Player player : etc.getServer().getPlayerList()) {
-			player.sendMessage(msg);
+			if (redundant || !lastMessages.containsKey(player.getName())
+				|| !lastMessages.get(player.getName()).equals(msg)) {
+				player.sendMessage(msg);
+				lastMessages.put(player.getName(), msg);
+			}
 		}
 	}
 
-	public static void player(String player, String format, Object... args) {
+	public static void player(boolean redundant, String player, String format,
+		Object... args) {
 		Player p = etc.getServer().getPlayer(player);
 		if (p != null) {
-			Chat.player(player, format, args);
+			Chat.player(redundant, player, format, args);
 		}
 	}
 
-	public static void player(Player player, String format, Object... args) {
-		player.sendMessage(String.format(format, args));
-	}
-
-	public static void players(Player[] players, String format, Object... args) {
-		String msg = String.format(format, args);
-		for (Player player : players) {
-			player.sendMessage(msg);
-		}
-	}
-
-	public static void player(Collection<Player> players, String format,
+	public static void player(boolean redundant, Player player, String format,
 		Object... args) {
 		String msg = String.format(format, args);
-		for (Player player : players) {
+		if (redundant || !lastMessages.containsKey(player.getName())
+			|| !lastMessages.get(player.getName()).equals(msg)) {
 			player.sendMessage(msg);
+			lastMessages.put(player.getName(), msg);
 		}
 	}
 
-	public static void admin(String format, Object... args) {
+	public static void players(boolean redundant, Player[] players,
+		String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : players) {
+			if (redundant || !lastMessages.containsKey(player.getName())
+				|| !lastMessages.get(player.getName()).equals(msg)) {
+				player.sendMessage(msg);
+				lastMessages.put(player.getName(), msg);
+			}
+		}
+	}
+
+	public static void player(boolean redundant, Collection<Player> players,
+		String format, Object... args) {
+		String msg = String.format(format, args);
+		for (Player player : players) {
+			if (redundant || !lastMessages.containsKey(player.getName())
+				|| !lastMessages.get(player.getName()).equals(msg)) {
+				player.sendMessage(msg);
+				lastMessages.put(player.getName(), msg);
+			}
+		}
+	}
+
+	public static void admin(boolean redundant, String format, Object... args) {
 		String msg = String.format(format, args);
 		for (Player player : etc.getServer().getPlayerList()) {
 			if (player.isAdmin()) {
-				player.sendMessage(msg);
+				if (redundant || !lastMessages.containsKey(player.getName())
+					|| !lastMessages.get(player.getName()).equals(msg)) {
+					player.sendMessage(msg);
+					lastMessages.put(player.getName(), msg);
+				}
 			}
 		}
 	}
 
-	public static void group(final String group, String format, Object... args) {
+	public static void group(boolean redundant, final String group,
+		String format, Object... args) {
 		String msg = String.format(format, args);
 		for (Player player : etc.getServer().getPlayerList()) {
 			if (player.isInGroup(group)) {
-				player.sendMessage(msg);
+				if (redundant || !lastMessages.containsKey(player.getName())
+					|| !lastMessages.get(player.getName()).equals(msg)) {
+					player.sendMessage(msg);
+					lastMessages.put(player.getName(), msg);
+				}
 			}
 		}
 	}
 
-	public static void auth(final String command, String format, Object... args) {
+	public static void auth(boolean redundant, final String command,
+		String format, Object... args) {
 		String msg = String.format(format, args);
 		for (Player player : etc.getServer().getPlayerList()) {
 			if (player.canUseCommand(command)) {
-				player.sendMessage(msg);
+				if (redundant || !lastMessages.containsKey(player.getName())
+					|| !lastMessages.get(player.getName()).equals(msg)) {
+					player.sendMessage(msg);
+					lastMessages.put(player.getName(), msg);
+				}
 			}
 		}
 	}
 
-	public static void neighbors(final Player player, final double radius,
-		String format, Object... args) {
+	public static void neighbors(boolean redundant, final Player player,
+		final double radius, String format, Object... args) {
 		String msg = String.format(format, args);
 		for (Player p : etc.getServer().getPlayerList()) {
 			double distance =
@@ -72,16 +111,25 @@ public final class Chat {
 					+ Math.pow(p.getY() - player.getY(), 2)
 					+ Math.pow(p.getZ() - player.getZ(), 2)));
 			if (distance <= radius) {
-				p.sendMessage(msg);
+				if (redundant || !lastMessages.containsKey(player.getName())
+					|| !lastMessages.get(player.getName()).equals(msg)) {
+					p.sendMessage(msg);
+					lastMessages.put(player.getName(), msg);
+				}
 			}
 		}
 	}
 
-	public static void condition(Predicate predicate, String format, Object... args) {
+	public static void condition(boolean redundant, Predicate predicate,
+		String format, Object... args) {
 		String msg = String.format(format, args);
 		for (Player player : etc.getServer().getPlayerList()) {
 			if (predicate.evaluate(player)) {
-				player.sendMessage(msg);
+				if (redundant || !lastMessages.containsKey(player.getName())
+					|| !lastMessages.get(player.getName()).equals(msg)) {
+					player.sendMessage(msg);
+					lastMessages.put(player.getName(), msg);
+				}
 			}
 		}
 	}

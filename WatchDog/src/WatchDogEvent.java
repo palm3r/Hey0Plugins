@@ -1,0 +1,3 @@
+public enum WatchDogEvent {
+	DESTROY, PLACE, USE, OPEN, DROP, PICKUP, LOGIN, LOGOUT, ATTACK, KILL, TELEPORT;
+}

@@ -14,7 +14,7 @@ public class RemoveWarpCommand extends Command {
 	@Override
 	public boolean execute(Player player, String command, List<String> args) {
 		if (args.isEmpty()) {
-			Chat.player(player, getUsage(false, true));
+			Chat.player(false, player, getUsage(false, true));
 			return true;
 		}
 		Pair<String, String> p = plugin.normalizeKey(player, args.get(0));
@@ -25,13 +25,12 @@ public class RemoveWarpCommand extends Command {
 			location = plugin.getWarp(player, key);
 		}
 		if (location == null) {
-			Chat.player(player, (Colors.Rose + "Warp ") + (Colors.LightGreen + key)
-				+ (Colors.Rose + " not found"));
+			Chat.player(false, player, (Colors.Rose + "Warp ") + (Colors.LightGreen + key) + (Colors.Rose + " not found"));
 			return true;
 		}
 		plugin.removeWarp(player, key);
-		Chat.player(player, (Colors.LightGray + "Warp ")
-			+ (Colors.LightGreen + key) + (Colors.LightGray + " has been removed"));
+		Chat.player(false, player, (Colors.LightGray + "Warp ") + (Colors.LightGreen + key)
+			+ (Colors.LightGray + " has been removed"));
 		return true;
 	}
 

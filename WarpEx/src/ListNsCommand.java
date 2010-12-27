@@ -15,13 +15,12 @@ public class ListNsCommand extends Command {
 	public boolean execute(Player player, String command, List<String> args) {
 		Set<String> set = new HashSet<String>();
 		for (Pair<String, String> w : plugin.getAllWarps(player)) {
-			if (!w.first.equals(Namespace.Global.get(player))
-				&& !w.first.equals(Namespace.Secret.get(player))) {
+			if (!w.first.equals(Namespace.Global.get(player)) && !w.first.equals(Namespace.Secret.get(player))) {
 				set.add(w.first);
 			}
 		}
 		if (set.isEmpty()) {
-			Chat.player(player, (Colors.Rose + "No namespaces avairable"));
+			Chat.player(false, player, (Colors.Rose + "No namespaces avairable"));
 			return true;
 		}
 		StringBuilder sb = new StringBuilder();
@@ -31,10 +30,8 @@ public class ListNsCommand extends Command {
 			}
 			sb.append(s);
 		}
-		Chat.player(player, (Colors.LightGray + "Namespaces: ")
-			+ (Colors.White + sb.toString()));
-		Chat.player(player, (Colors.LightGray + "Type ")
-			+ (Colors.LightPurple + "/listwarps [name]")
+		Chat.player(false, player, (Colors.LightGray + "Namespaces: ") + (Colors.White + sb.toString()));
+		Chat.player(false, player, (Colors.LightGray + "Type ") + (Colors.LightPurple + "/listwarps [name]")
 			+ (Colors.LightGray + " to see warps"));
 		return true;
 	}

@@ -1,42 +1,30 @@
 import java.util.*;
 import org.apache.commons.lang.builder.*;
 
-public class Log {
+public class Log extends DataRow {
 
-	@Table.Column(primaryKey = true, autoIncrement = true)
-	public Long id;
-
-	@Table.Column(notNull = true)
+	@Column(index = "log_time_idx")
 	public Long time;
 
-	@Table.Column(notNull = true)
+	@Column(index = "log_action_idx")
 	public String action;
 
-	@Table.Column(notNull = true)
+	@Column(index = "log_player_idx")
 	public String player;
 
-	@Table.Column()
-	public String target_id;
+	@Column(index = "log_target_idx")
+	public String target_id, target_name;
 
-	@Table.Column()
-	public String target_name;
-
-	@Table.Column(notNull = true)
+	@Column(index = "log_location_idx")
 	public Double x, y, z;
 
-	@Table.Column(notNull = true)
-	public Boolean denied;
-
-	@Table.Column(notNull = true)
-	public Boolean kicked;
-
-	@Table.Column(notNull = true)
-	public Boolean banned;
+	@Column(index = "log_flag_idx")
+	public Boolean denied, kicked, banned;
 
 	public Log() {
 	}
 
-	public String getColor() {
+	public static String getColor(boolean denied, boolean kicked, boolean banned) {
 		String color = Colors.Yellow;
 		if (denied) {
 			color = Colors.Gold;
@@ -50,11 +38,16 @@ public class Log {
 		return color;
 	}
 
-	public String getMessage() {
+	public String getColor() {
+		return getColor(denied, kicked, banned);
+	}
+
+	public static String getMessage(String player, String action, String target, boolean denied, boolean kicked,
+		boolean banned) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(player);
 		sb.append(" ");
-		sb.append(action + (target_name != null ? " " + target_name : ""));
+		sb.append(action + (target != null ? " " + target : ""));
 		// sb.append(String.format(" (%d,%d,%d)", x, y, z));
 		if (denied) {
 			sb.append(" DENIED");
@@ -68,31 +61,14 @@ public class Log {
 		return sb.toString();
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null)
-			return false;
-		if (obj == this)
-			return true;
-		if (!(obj instanceof Log))
-			return false;
-		Log r = (Log) obj;
-		return new EqualsBuilder().append(action, r.action).append(player, r.player).append(
-			target_id, r.target_id).append(target_name, r.target_name).append(x, r.x).append(
-			y, r.y).append(z, r.z).isEquals();
-	}
-
-	@Override
-	public int hashCode() {
-		return new HashCodeBuilder().append(action).append(player).append(target_id).append(
-			target_name).append(x).append(y).append(z).hashCode();
+	public String getMessage() {
+		return getMessage(player, action, target_name, denied, kicked, banned);
 	}
 
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this).append(id).append(new Date(time)).append(
-			action).append(player).append(target_id).append(target_name).append(x).append(
-			y).append(z).append(denied).append(kicked).append(banned).toString();
+		return new ToStringBuilder(this).append(getId()).append(new Date(time)).append(action).append(player).append(
+			target_id).append(target_name).append(x).append(y).append(z).append(denied).append(kicked).append(banned).toString();
 	}
 
 }

@@ -21,11 +21,11 @@ public class VoteCommand extends Command {
 		}
 		String subject = sb.toString().trim();
 		if (subject.length() == 0) {
-			Chat.player(player, getUsage(false, true));
+			Chat.player(false, player, getUsage(false, true));
 			return true;
 		}
 		if (plugin.isVoting()) {
-			Chat.player(player, (Colors.Rose + "Another vote on progress now"));
+			Chat.player(false, player, (Colors.Rose + "Another vote on progress now"));
 			return true;
 		}
 		plugin.beginVote(subject);

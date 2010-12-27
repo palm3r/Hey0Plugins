@@ -26,7 +26,7 @@ public class ListWarpsCommand extends Command {
 			}
 		}
 		if (set.isEmpty()) {
-			Chat.player(player, (Colors.Rose + "No warps avairable"));
+			Chat.player(false, player, (Colors.Rose + "No warps avairable"));
 			return true;
 		}
 		StringBuilder sb = new StringBuilder();
@@ -43,11 +43,11 @@ public class ListWarpsCommand extends Command {
 		if (ns.equals(Namespace.Secret.get(player))) {
 			ns2 = "Secret";
 		}
-		Chat.player(player, (Colors.LightGreen + ns2)
-			+ (Colors.LightGray + " warps: ") + (Colors.White + sb.toString().trim()));
-		Chat.player(player, (Colors.LightGray + "Type ")
-			+ (Colors.LightPurple + "/warp " + (ns.equals(defns) ? "[name]" : ns
-				+ ":[name]")) + (Colors.LightGray + " to use"));
+		Chat.player(false, player, (Colors.LightGreen + ns2) + (Colors.LightGray + " warps: ")
+			+ (Colors.White + sb.toString().trim()));
+		Chat.player(false, player, (Colors.LightGray + "Type ")
+			+ (Colors.LightPurple + "/warp " + (ns.equals(defns) ? "[name]" : ns + ":[name]"))
+			+ (Colors.LightGray + " to use"));
 		return true;
 	}
 

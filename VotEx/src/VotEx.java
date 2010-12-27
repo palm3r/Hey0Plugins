@@ -30,10 +30,9 @@ public class VotEx extends PluginEx {
 	}
 
 	public void beginVote(final String subject) {
-		Chat.broadcast((Colors.LightBlue + "[VOTE] ") + (Colors.White + subject));
-		Chat.broadcast((Colors.LightGray + "Please vote ")
-			+ (Colors.LightGreen + yes.getCommand()) + (Colors.LightGray + " or ")
-			+ (Colors.Rose + no.getCommand()));
+		Chat.broadcast(false, (Colors.LightBlue + "[VOTE] ") + (Colors.White + subject));
+		Chat.broadcast(false, (Colors.LightGray + "Please vote ") + (Colors.LightGreen + yes.getCommand())
+			+ (Colors.LightGray + " or ") + (Colors.Rose + no.getCommand()));
 		answers.clear();
 		future = scheduler.schedule(new Runnable() {
 			@Override
@@ -46,10 +45,9 @@ public class VotEx extends PluginEx {
 				}
 				int no = answers.size() - yes;
 				int abs = etc.getServer().getPlayerList().size() - (yes + no);
-				Chat.broadcast((Colors.LightBlue + "[VOTE] ")
-					+ (Colors.White + subject));
-				Chat.broadcast((Colors.LightGreen + "YES " + yes)
-					+ (Colors.Rose + " NO " + no) + (Colors.LightGray + " ABS " + abs));
+				Chat.broadcast(false, (Colors.LightBlue + "[VOTE] ") + (Colors.White + subject));
+				Chat.broadcast(false, (Colors.LightGreen + "YES " + yes) + (Colors.Rose + " NO " + no)
+					+ (Colors.LightGray + " ABS " + abs));
 				future = null;
 			}
 		}, expires, TimeUnit.SECONDS);

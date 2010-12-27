@@ -2,10 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry exported="true" kind="lib" path="libs/minecraft_server.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/Minecraft_Mod.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/commons-collections.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/commons-lang.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/h2.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/commons-collections.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/log4j.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/h2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

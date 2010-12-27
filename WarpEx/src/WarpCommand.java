@@ -14,18 +14,18 @@ public class WarpCommand extends Command {
 	@Override
 	public boolean execute(Player player, String command, List<String> args) {
 		if (args.isEmpty()) {
-			Chat.player(player, getUsage(false, true));
+			Chat.player(false, player, getUsage(false, true));
 			return true;
 		}
 		String warpName = args.get(0);
 		Location location = plugin.getWarp(player, warpName);
 		if (location == null) {
-			Chat.player(player, (Colors.Rose + "Warp ")
-				+ (Colors.LightGreen + warpName) + (Colors.Rose + " is not found"));
+			Chat.player(false, player, (Colors.Rose + "Warp ") + (Colors.LightGreen + warpName)
+				+ (Colors.Rose + " is not found"));
 			return true;
 		}
 		player.teleportTo(location);
-		Chat.player(player, (Colors.LightGreen + "Woosh!"));
+		Chat.player(false, player, (Colors.LightGreen + "Woosh!"));
 		return true;
 	}
 

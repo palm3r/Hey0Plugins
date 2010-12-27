@@ -12,11 +12,8 @@ public class GodCommand extends Command {
 
 	@Override
 	public boolean execute(Player player, String command, List<String> args) {
-		if (plugin.canBeGod(player)) {
-			plugin.toggleGod(player);
-			return true;
-		}
-		return false;
+		plugin.setGodPlayer(player, !plugin.isGodPlayer(player));
+		return true;
 	}
 
 }

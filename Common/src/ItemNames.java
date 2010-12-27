@@ -21,8 +21,8 @@ public class ItemNames {
 						String[] s = StringUtils.split(line, ":");
 						items.put(Integer.valueOf(s[1].trim()), s[0].trim().toLowerCase());
 					} catch (Exception e) {
-						System.out.println(String.format("parse error: %s (%s:%d)", line,
-							fileName, index));
+						// System.out.println(String.format("parse error: %s (%s:%d)", line,
+						// fileName, index));
 						// e.printStackTrace();
 					}
 				}
