@@ -55,12 +55,13 @@ public class DeathFixListener extends PluginListener {
 	}
 
 	@Override
-	public boolean onDamage(PluginLoader.DamageType type, BaseEntity attacker, BaseEntity defender, int amount) {
+	public boolean onDamage(PluginLoader.DamageType type, BaseEntity attacker, BaseEntity defender,
+		int amount) {
 		if (defender != null && defender.isPlayer()) {
 			Player player = defender.getPlayer();
-			if (plugin.isGodPlayer(player))
+			if (plugin.isGodPlayer(player) || plugin.checkProtection(player, null))
 				return true;
-			if (player != null && player.getHealth() <= amount) {
+			if (player != null && player.getHealth() <= amount && !death.containsKey(player.getName())) {
 				String key = type != null ? type.toString().toLowerCase() : "default";
 				Map<String, String> map = new HashMap<String, String>();
 				map.put("{player}", player.getName());
@@ -102,6 +103,9 @@ public class DeathFixListener extends PluginListener {
 					break;
 				}
 				death.put(player.getName(), Pair.create(key, map));
+				if (plugin.isKickOnDeath()) {
+					player.kick("You died. rejoin server please.");
+				}
 			}
 		}
 		return false;
@@ -109,16 +113,7 @@ public class DeathFixListener extends PluginListener {
 
 	@Override
 	public boolean onHealthChange(Player player, int oldValue, int newValue) {
-		if (newValue < oldValue && plugin.isGodPlayer(player))
-			return true;
-		if (newValue <= 0) {
-			showDeathMessage(player);
-			player.setFireTicks(0);
-			if (plugin.isKickOnDeath()) {
-				player.kick("You died. reconnect server please.");
-			}
-		}
-		return false;
+		return newValue < oldValue && plugin.isGodPlayer(player);
 	}
 
 	@Override
@@ -130,6 +125,7 @@ public class DeathFixListener extends PluginListener {
 
 	@Override
 	public void onDisconnect(Player player) {
+		death.remove(player.getName());
 		plugin.removeProtection(player);
 		plugin.setGodPlayer(player, false);
 	}

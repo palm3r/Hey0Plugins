@@ -37,7 +37,8 @@ public class DeathFix extends PluginEx {
 	private boolean godOnLogin = false;
 	private boolean kickOnDeath = false;
 	private int spawnProtection = 5;
-	private final Map<String, Location> protections = new HashMap<String, Location>();
+	private final Map<Player, Location> protections = new HashMap<Player, Location>();
+	private Map<String, Location> homes = new HashMap<String, Location>();
 
 	public DeathFix() {
 		DeathFixListener listener = new DeathFixListener(this);
@@ -61,21 +62,23 @@ public class DeathFix extends PluginEx {
 		kickOnDeath = Boolean.valueOf(getProperty(KICK_ON_DEATH_KEY, KICK_ON_DEATH_DEFAULT));
 		spawnProtection = Integer.valueOf(getProperty(SPAWN_PROTECTION_KEY, SPAWN_PROTECTION_DEFAULT));
 		try {
-			formats = load(new HashMap<String, String>(), MESSAGES_INI, new Converter<String, Pair<String, String>>() {
-				@Override
-				public Pair<String, String> convert(String line) {
-					try {
-						String[] s = line.split("=", 2);
-						String first = s[0].trim().toLowerCase();
-						String second = s[1].trim();
-						return Pair.create(first, second);
-					} catch (Exception e) {
-						info("ERROR: " + line);
-						e.printStackTrace();
-					}
-					return null;
-				}
-			});
+			formats =
+				load(new HashMap<String, String>(), MESSAGES_INI,
+					new Converter<String, Pair<String, String>>() {
+						@Override
+						public Pair<String, String> convert(String line) {
+							try {
+								String[] s = line.split("=", 2);
+								String first = s[0].trim().toLowerCase();
+								String second = s[1].trim();
+								return Pair.create(first, second);
+							} catch (Exception e) {
+								info("ERROR: " + line);
+								e.printStackTrace();
+							}
+							return null;
+						}
+					});
 		} catch (IOException e) {
 			e.printStackTrace();
 			try {
@@ -88,6 +91,25 @@ public class DeathFix extends PluginEx {
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
+		}
+
+		try {
+			homes =
+				MapTools.load(new HashMap<String, Location>(), "homes.txt",
+					new Converter<String, Pair<String, Location>>() {
+						@Override
+						public Pair<String, Location> convert(String line) {
+							try {
+								String[] s = line.split(":");
+								return Pair.create(s[0], new Location(Double.valueOf(s[1]), Double.valueOf(s[2]),
+									Double.valueOf(s[3])));
+							} catch (Exception e) {
+							}
+							return null;
+						}
+					});
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -113,7 +135,8 @@ public class DeathFix extends PluginEx {
 		} else {
 			godPlayers.remove(player);
 		}
-		Chat.player(false, player, (god ? Colors.LightBlue : Colors.Rose) + "God mode %s", god ? "on" : "off");
+		Chat.player(false, player, (god ? Colors.LightBlue : Colors.Rose) + "God mode %s", god ? "on"
+			: "off");
 	}
 
 	public boolean isGodOnLogin() {
@@ -124,28 +147,39 @@ public class DeathFix extends PluginEx {
 		return kickOnDeath;
 	}
 
+	public Location getSpawnLocation(Player player) {
+		return homes.containsKey(player.getName()) ? homes.get(player.getName())
+			: etc.getServer().getSpawnLocation();
+	}
+
 	public boolean checkProtection(Player player, Location loc) {
-		Location center = protections.containsKey(player.getName()) ? protections.get(player.getName()) : null;
-		if (center == null)
-			return false;
+		boolean b = protections.containsKey(player);
+		Location spawn = b ? protections.get(player) : etc.getServer().getSpawnLocation();
 		if (loc != null) {
-			if ((loc.x < (center.x - spawnProtection) || (center.x + spawnProtection) < loc.x)
-				|| (loc.y < (center.y - spawnProtection) || (center.y + spawnProtection) < loc.y)) {
+			double distance =
+				Math.abs(Math.sqrt(Math.pow(spawn.x - loc.x, 2.0) + Math.pow(spawn.y - loc.y, 2.0)
+					+ Math.pow(spawn.z - loc.z, 2.0)));
+			if (distance > spawnProtection) {
 				removeProtection(player);
+				// return false;
 			}
 		}
-		return true;
+		return b;
+	}
+
+	public boolean isProtected(Player player) {
+		return protections.containsKey(player);
 	}
 
 	public void addProtection(Player player, Location location) {
 		if (location != null) {
-			protections.put(player.getName(), location);
+			protections.put(player, location);
 			Chat.player(false, player, Colors.LightGreen + "You are protected now");
 		}
 	}
 
 	public void removeProtection(Player player) {
-		protections.remove(player.getName());
+		protections.remove(player);
 		Chat.player(false, player, Colors.Gold + "You haven't been protected any longer");
 	}
 
