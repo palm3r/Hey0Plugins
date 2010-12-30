@@ -31,8 +31,7 @@ import org.apache.log4j.*;
 public abstract class PluginEx extends Plugin {
 
 	private static final String PLUGIN_INI = "plugin.ini";
-	private static final String LOG_PATTERN =
-		"%d{yyyy-MM-dd HH:mm:ss} [%p] %c: %m%n";
+	private static final String LOG_PATTERN = "%d{yyyy-MM-dd HH:mm:ss} [%p] %c: %m%n";
 
 	private static final String LOG_ENABLE_KEY = "log-enable";
 	private static final String LOG_ENABLE_DEFAULT = "false";
@@ -49,8 +48,7 @@ public abstract class PluginEx extends Plugin {
 	protected PluginEx() {
 		setName(this.getClass().getName());
 		logger = Logger.getLogger(getName());
-		logger.addAppender(new ConsoleAppender(new PatternLayout(LOG_PATTERN),
-			"System.out"));
+		logger.addAppender(new ConsoleAppender(new PatternLayout(LOG_PATTERN), "System.out"));
 		addHook(PluginLoader.Hook.COMMAND, PluginListener.Priority.MEDIUM, null);
 	}
 
@@ -65,11 +63,13 @@ public abstract class PluginEx extends Plugin {
 	 * @param priority
 	 * @param listener
 	 */
-	public final void addHook(PluginLoader.Hook hook,
-		PluginListener.Priority priority, PluginListener listener) {
-		HookListener hl =
-			new HookListener(new WrappedListener(this, listener), priority);
-		hooks.put(hook, hl);
+	public final void addHook(PluginLoader.Hook hook, PluginListener.Priority priority,
+		PluginListener listener) {
+		HookListener hl = new HookListener(new WrappedListener(this, listener), priority);
+		HookListener old = hooks.put(hook, hl);
+		if (old != null) {
+			old.disable();
+		}
 		hl.enable(hook, this);
 	}
 
@@ -172,13 +172,12 @@ public abstract class PluginEx extends Plugin {
 	}
 
 	public final String getAbsolutePath(String fileName) {
-		return new File(".").getAbsoluteFile().getParent() + File.separator
-			+ getRelatedPath(fileName);
+		return new File(".").getAbsoluteFile().getParent() + File.separator + getRelatedPath(fileName);
 	}
 
 	@Deprecated
-	public final <T> Collection<T> load(Collection<T> collection,
-		String fileName, Converter<String, T> converter) throws IOException {
+	public final <T> Collection<T> load(Collection<T> collection, String fileName,
+		Converter<String, T> converter) throws IOException {
 		return CollectionTools.load(collection, getRelatedPath(fileName), converter);
 	}
 
@@ -276,19 +275,18 @@ public abstract class PluginEx extends Plugin {
 		// configure plugin independent logger
 		try {
 			Level level =
-				(Level) Level.class.getField(
-					getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(null);
+				(Level) Level.class.getField(getProperty(LOG_LEVEL_KEY, LOG_LEVEL_DEFAULT).toUpperCase()).get(
+					null);
 			getLogger().setLevel(level);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		boolean enabled =
-			Boolean.valueOf(getProperty(LOG_ENABLE_KEY, LOG_ENABLE_DEFAULT));
+		boolean enabled = Boolean.valueOf(getProperty(LOG_ENABLE_KEY, LOG_ENABLE_DEFAULT));
 		if (enabled) {
 			try {
 				getLogger().addAppender(
-					new DailyRollingFileAppender(new PatternLayout(LOG_PATTERN), "logs/"
-						+ getName() + ".log", ".yyyy-MM-dd"));
+					new DailyRollingFileAppender(new PatternLayout(LOG_PATTERN),
+						"logs/" + getName() + ".log", ".yyyy-MM-dd"));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

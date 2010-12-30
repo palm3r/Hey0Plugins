@@ -39,7 +39,8 @@ public class WatchDogListener extends PluginListener {
 		if (handler != null) {
 			denied =
 				handler.execute(block.getStatus() == 3, WatchDogEvent.DESTROY, player, block.getType(),
-					ItemNames.getName(block.getType()), new Location(block.getX(), block.getY(), block.getZ()));
+					ItemNames.getName(block.getType()),
+					new Location(block.getX(), block.getY(), block.getZ()));
 		}
 		return denied;
 	}
@@ -51,7 +52,8 @@ public class WatchDogListener extends PluginListener {
 		if (handler != null) {
 			denied =
 				handler.execute(block.getStatus() == 3, WatchDogEvent.DESTROY, player, block.getType(),
-					ItemNames.getName(block.getType()), new Location(block.getX(), block.getY(), block.getZ()));
+					ItemNames.getName(block.getType()),
+					new Location(block.getX(), block.getY(), block.getZ()));
 		}
 		return denied;
 	}
@@ -62,8 +64,8 @@ public class WatchDogListener extends PluginListener {
 		WatchDogHandler handler = plugin.getHandler(item.getItemId(), WatchDogEvent.DROP);
 		if (handler != null) {
 			denied =
-				handler.execute(true, WatchDogEvent.DROP, player, item.getItemId(), ItemNames.getName(item.getItemId()),
-					player.getLocation());
+				handler.execute(true, WatchDogEvent.DROP, player, item.getItemId(),
+					ItemNames.getName(item.getItemId()), player.getLocation());
 		}
 		return denied;
 	}
@@ -74,14 +76,15 @@ public class WatchDogListener extends PluginListener {
 		WatchDogHandler handler = plugin.getHandler(item.getItemId(), WatchDogEvent.PICKUP);
 		if (handler != null) {
 			denied =
-				handler.execute(true, WatchDogEvent.PICKUP, player, item.getItemId(), ItemNames.getName(item.getItemId()),
-					player.getLocation());
+				handler.execute(true, WatchDogEvent.PICKUP, player, item.getItemId(),
+					ItemNames.getName(item.getItemId()), player.getLocation());
 		}
 		return denied;
 	}
 
 	@Override
-	public boolean onDamage(PluginLoader.DamageType type, BaseEntity attacker, BaseEntity defender, int amount) {
+	public boolean onDamage(PluginLoader.DamageType type, BaseEntity attacker, BaseEntity defender,
+		int amount) {
 		boolean denied = false;
 		if (attacker != null && attacker.isPlayer() && defender != null && defender.isPlayer()) {
 			Player att = attacker.getPlayer();
@@ -100,17 +103,21 @@ public class WatchDogListener extends PluginListener {
 	@Override
 	public boolean onItemUse(Player player, Block blockPlaced, Block blockClicked, Item item) {
 		boolean denied = false;
-		WatchDogHandler handler = plugin.getHandler(item.getItemId(), WatchDogEvent.USE);
-		if (handler != null) {
-			denied =
-				handler.execute(true, WatchDogEvent.USE, player, item.getItemId(), ItemNames.getName(item.getItemId()),
-					new Location(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ()));
+		if (blockClicked != null && item != null) {
+			WatchDogHandler handler = plugin.getHandler(item.getItemId(), WatchDogEvent.USE);
+			if (handler != null) {
+				denied =
+					handler.execute(true, WatchDogEvent.USE, player, item.getItemId(),
+						ItemNames.getName(item.getItemId()),
+						new Location(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ()));
+			}
 		}
 		return denied;
 	}
 
 	@Override
-	public boolean onBlockPlace(Player player, Block blockPlaced, Block blockClicked, Item itemInHand) {
+	public boolean
+		onBlockPlace(Player player, Block blockPlaced, Block blockClicked, Item itemInHand) {
 		boolean denied = false;
 		WatchDogHandler handler = plugin.getHandler(blockPlaced.getType(), WatchDogEvent.PLACE);
 		if (handler != null) {
@@ -128,8 +135,8 @@ public class WatchDogListener extends PluginListener {
 			WatchDogHandler handler = plugin.getHandler(blockClicked.getType(), WatchDogEvent.OPEN);
 			if (handler != null) {
 				handler.execute(true, WatchDogEvent.OPEN, player, blockClicked.getType(),
-					ItemNames.getName(blockClicked.getType()), new Location(blockClicked.getX(), blockClicked.getY(),
-						blockClicked.getZ()));
+					ItemNames.getName(blockClicked.getType()),
+					new Location(blockClicked.getX(), blockClicked.getY(), blockClicked.getZ()));
 			}
 		}
 	}

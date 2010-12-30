@@ -3,27 +3,10 @@ import java.util.*;
 public class DeathFixListener extends PluginListener {
 
 	private final DeathFix plugin;
-
-	private final Map<String, Pair<String, Map<String, String>>> death =
-		new HashMap<String, Pair<String, Map<String, String>>>();
+	private Set<Player> dead = new HashSet<Player>();
 
 	public DeathFixListener(DeathFix plugin) {
 		this.plugin = plugin;
-	}
-
-	private void showDeathMessage(Player player) {
-		if (death.containsKey(player.getName())) {
-			Pair<String, Map<String, String>> p = death.remove(player.getName());
-
-			String msg = plugin.getDeathMessageFormat(p.first);
-			if (msg != null) {
-				for (Map.Entry<String, String> entry : p.second.entrySet()) {
-					msg = msg.replace(entry.getKey(), entry.getValue());
-				}
-				Chat.broadcast(false, Colors.Red + msg);
-				plugin.info(msg);
-			}
-		}
 	}
 
 	@Override
@@ -33,13 +16,7 @@ public class DeathFixListener extends PluginListener {
 
 	@Override
 	public boolean onTeleport(Player player, Location from, Location to) {
-		if (death.containsKey(player.getName())) {
-			showDeathMessage(player);
-			plugin.addProtection(player, to);
-		} else {
-			plugin.checkProtection(player, to);
-		}
-		return false;
+		return dead.contains(player);
 	}
 
 	@Override
@@ -59,9 +36,10 @@ public class DeathFixListener extends PluginListener {
 		int amount) {
 		if (defender != null && defender.isPlayer()) {
 			Player player = defender.getPlayer();
-			if (plugin.isGodPlayer(player) || plugin.checkProtection(player, null))
+			if (plugin.isGodPlayer(player)
+				|| (attacker != null && attacker.isPlayer() && plugin.checkProtection(player, null)))
 				return true;
-			if (player != null && player.getHealth() <= amount && !death.containsKey(player.getName())) {
+			if (player.getHealth() <= 0 && !dead.contains(player)) {
 				String key = type != null ? type.toString().toLowerCase() : "default";
 				Map<String, String> map = new HashMap<String, String>();
 				map.put("{player}", player.getName());
@@ -102,9 +80,17 @@ public class DeathFixListener extends PluginListener {
 				case WATER:
 					break;
 				}
-				death.put(player.getName(), Pair.create(key, map));
 				if (plugin.isKickOnDeath()) {
 					player.kick("You died. rejoin server please.");
+				}
+				dead.add(player);
+				String msg = plugin.getDeathMessageFormat(key);
+				if (msg != null) {
+					for (Map.Entry<String, String> entry : map.entrySet()) {
+						msg = msg.replace(entry.getKey(), entry.getValue());
+					}
+					Chat.broadcast(false, Colors.Red + msg);
+					plugin.info(msg);
 				}
 			}
 		}
@@ -113,7 +99,19 @@ public class DeathFixListener extends PluginListener {
 
 	@Override
 	public boolean onHealthChange(Player player, int oldValue, int newValue) {
-		return newValue < oldValue && plugin.isGodPlayer(player);
+		if (newValue < oldValue && plugin.isGodPlayer(player))
+			return true;
+		if (oldValue == -99999999) {
+			dead.remove(player);
+			/*
+			 * Location spawn = plugin.getSpawnLocation(player);
+			 * Chat.player(false, player, "Teleport to (%f,%f,%f)", spawn.x, spawn.y,
+			 * spawn.z);
+			 * player.teleportTo(spawn);
+			 */
+			plugin.addProtection(player, player.getLocation());
+		}
+		return false;
 	}
 
 	@Override
@@ -121,11 +119,12 @@ public class DeathFixListener extends PluginListener {
 		if (plugin.isGodAllowed(player)) {
 			plugin.setGodPlayer(player, plugin.isGodOnLogin());
 		}
+		plugin.addProtection(player, player.getLocation());
 	}
 
 	@Override
 	public void onDisconnect(Player player) {
-		death.remove(player.getName());
+		dead.remove(player);
 		plugin.removeProtection(player);
 		plugin.setGodPlayer(player, false);
 	}
